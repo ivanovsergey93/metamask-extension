@@ -1,5 +1,9 @@
 const { strict: assert } = require('assert');
-const { convertToHexValue, withFixtures } = require('../helpers');
+const {
+  convertToHexValue,
+  withFixtures,
+  regularDelayMs,
+} = require('../helpers');
 const FixtureBuilder = require('../fixture-builder');
 
 describe('Gas API fallback', function () {
@@ -76,6 +80,17 @@ describe('Gas API fallback', function () {
 
         const inputAmount = await driver.findElement('.unit-input__input');
         await inputAmount.fill('1');
+
+        await driver.clickElement({ text: 'Next', tag: 'button' });
+
+        await driver.delay(regularDelayMs);
+        await driver.findElement('.transaction-alerts');
+
+        const error = await driver.isElementPresent({
+          text: 'Network is busy. Gas prices are high and estimates are less accurate.',
+        });
+
+        assert.equal(error, true, 'Network error is present');
       },
     );
   });
