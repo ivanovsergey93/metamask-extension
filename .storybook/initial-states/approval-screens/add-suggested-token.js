@@ -1,7 +1,7 @@
 import { ApprovalType } from '@metamask/controller-utils';
 import nanoid from 'nanoid';
 
-const suggestedAssets = [
+export const suggestedTokens = [
   {
     asset: {
       address: '0x6b175474e89094c44da98b954eedeac495271d0f',
@@ -85,7 +85,7 @@ const suggestedAssets = [
   },
 ];
 
-export const pendingAssetApprovals = suggestedAssets.map(({ asset }) => {
+export const pendingSuggestedTokenApprovals = suggestedTokens.map(({ asset }) => {
   return {
     type: ApprovalType.WatchAsset,
     requestData: {

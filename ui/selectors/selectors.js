@@ -1,11 +1,7 @@
 ///: BEGIN:ONLY_INCLUDE_IN(snaps)
 import { SubjectType } from '@metamask/subject-metadata-controller';
 ///: END:ONLY_INCLUDE_IN
-import {
-  ApprovalType,
-  ERC1155,
-  ERC721,
-} from '@metamask/controller-utils';
+import { ApprovalType, ERC1155, ERC721 } from '@metamask/controller-utils';
 import {
   createSelector,
   createSelectorCreator,
@@ -509,10 +505,6 @@ export function getCurrentCurrency(state) {
 export function getTotalUnapprovedCount(state) {
   const { pendingApprovalCount = 0 } = state.metamask;
   return pendingApprovalCount;
-  // ( pendingApprovalCount +
-  //   getSuggestedTokenCount(state) +
-  //   getSuggestedNftsCount(state)
-  // );
 }
 
 export function getTotalUnapprovedMessagesCount(state) {
@@ -564,13 +556,9 @@ export function getUnapprovedTemplatedConfirmations(state) {
   );
 }
 
-function getSuggestedTokenCount(state) {
-  return getSuggestedTokens(state)?.length || 0;
-}
-
 export function getSuggestedTokens(state) {
   return (
-    Object.values(state.metamask.pendingApprovals)?.filter(
+    getUnapprovedConfirmations(state)?.filter(
       ({ type, requestData: { asset } }) => {
         return type === ApprovalType.WatchAsset && asset.tokenId === undefined;
       },
@@ -578,13 +566,9 @@ export function getSuggestedTokens(state) {
   );
 }
 
-function getSuggestedNftsCount(state) {
-  return getSuggestedNfts(state)?.length || 0;
-}
-
 export function getSuggestedNfts(state) {
   return (
-    Object.values(state.metamask.pendingApprovals)?.filter(
+    getUnapprovedConfirmations(state)?.filter(
       ({
         requestData: {
           asset: { standard },
