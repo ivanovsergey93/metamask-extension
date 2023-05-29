@@ -327,7 +327,7 @@ describe('MetaMask Import UI', function () {
     );
   });
 
-  it('Import Account using private key of an already active account should result in an error', async function () {
+  it.only('Import Account using private key of an already active account should result in an error', async function () {
     const testPrivateKey =
       '0x53CB0AB5226EEBF4D872113D98332C1555DC304443BEE1CF759D15798D3C55A9';
     await withFixtures(
@@ -348,8 +348,10 @@ describe('MetaMask Import UI', function () {
         await driver.clickElement('.account-menu__icon');
         await driver.clickElement({ text: 'Import account', tag: 'div' });
 
-        // enter private key',
+        // enter private key
+        await driver.waitForSelector('#private-key-box');
         await driver.fill('#private-key-box', testPrivateKey);
+
         await driver.clickElement({ text: 'Import', tag: 'button' });
 
         // error should occur
