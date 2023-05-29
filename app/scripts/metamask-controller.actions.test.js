@@ -128,12 +128,10 @@ describe('MetaMaskController', function () {
   describe('Phishing Detection Mock', function () {
     it('should be updated to use v1 of the API', function () {
       // Update the fixture above if this test fails
-      assert.equal(
-        METAMASK_STALELIST_URL,
+      expect(METAMASK_STALELIST_URL).toBe(
         'https://phishing-detection.metafi.codefi.network/v1/stalelist',
       );
-      assert.equal(
-        METAMASK_HOTLIST_DIFF_URL,
+      expect(METAMASK_HOTLIST_DIFF_URL).toBe(
         'https://phishing-detection.metafi.codefi.network/v1/diffsSince',
       );
     });
