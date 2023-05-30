@@ -1,362 +1,90 @@
-diff --git a/dist/RateLimitController.d.ts b/dist/RateLimitController.d.ts
-new file mode 100644
-index 0000000000000000000000000000000000000000..652c08cb95244d300fad920fc1447e0b1ffca81d
---- /dev/null
-+++ b/dist/RateLimitController.d.ts
-@@ -0,0 +1,93 @@
-+import type { Patch } from 'immer';
-+import { BaseControllerV2 as BaseController, RestrictedControllerMessenger } from '@metamask/base-controller';
-+/**
-+ * @type RateLimitedApi
-+ * @property method - The method that is rate-limited.
-+ * @property rateLimitTimeout - The time window in which the rate limit is applied (in ms).
-+ * @property rateLimitCount - The amount of calls an origin can make in the rate limit time window.
-+ */
-+export declare type RateLimitedApi = {
-+    method: (...args: any[]) => any;
-+    rateLimitTimeout?: number;
-+    rateLimitCount?: number;
-+};
-+/**
-+ * @type RateLimitState
-+ * @property requests - Object containing number of requests in a given interval for each origin and api type combination
-+ */
-+export declare type RateLimitState<RateLimitedApis extends Record<string, RateLimitedApi>> = {
-+    requests: Record<keyof RateLimitedApis, Record<string, number>>;
-+};
-+declare const name = "RateLimitController";
-+export declare type RateLimitStateChange<RateLimitedApis extends Record<string, RateLimitedApi>> = {
-+    type: `${typeof name}:stateChange`;
-+    payload: [RateLimitState<RateLimitedApis>, Patch[]];
-+};
-+export declare type GetRateLimitState<RateLimitedApis extends Record<string, RateLimitedApi>> = {
-+    type: `${typeof name}:getState`;
-+    handler: () => RateLimitState<RateLimitedApis>;
-+};
-+export declare type CallApi<RateLimitedApis extends Record<string, RateLimitedApi>> = {
-+    type: `${typeof name}:call`;
-+    handler: RateLimitController<RateLimitedApis>['call'];
-+};
-+export declare type RateLimitControllerActions<RateLimitedApis extends Record<string, RateLimitedApi>> = GetRateLimitState<RateLimitedApis> | CallApi<RateLimitedApis>;
-+export declare type RateLimitMessenger<RateLimitedApis extends Record<string, RateLimitedApi>> = RestrictedControllerMessenger<typeof name, RateLimitControllerActions<RateLimitedApis>, RateLimitStateChange<RateLimitedApis>, never, never>;
-+/**
-+ * Controller with logic for rate-limiting API endpoints per requesting origin.
-+ */
-+export declare class RateLimitController<RateLimitedApis extends Record<string, RateLimitedApi>> extends BaseController<typeof name, RateLimitState<RateLimitedApis>, RateLimitMessenger<RateLimitedApis>> {
-+    private implementations;
-+    private rateLimitTimeout;
-+    private rateLimitCount;
-+    /**
-+     * Creates a RateLimitController instance.
-+     *
-+     * @param options - Constructor options.
-+     * @param options.messenger - A reference to the messaging system.
-+     * @param options.state - Initial state to set on this controller.
-+     * @param options.implementations - Mapping from API type to API implementation.
-+     * @param options.rateLimitTimeout - The time window in which the rate limit is applied (in ms).
-+     * @param options.rateLimitCount - The amount of calls an origin can make in the rate limit time window.
-+     */
-+    constructor({ rateLimitTimeout, rateLimitCount, messenger, state, implementations, }: {
-+        rateLimitTimeout?: number;
-+        rateLimitCount?: number;
-+        messenger: RateLimitMessenger<RateLimitedApis>;
-+        state?: Partial<RateLimitState<RateLimitedApis>>;
-+        implementations: RateLimitedApis;
-+    });
-+    /**
-+     * Calls an API if the requesting origin is not rate-limited.
-+     *
-+     * @param origin - The requesting origin.
-+     * @param type - The type of API call to make.
-+     * @param args - Arguments for the API call.
-+     * @returns `false` if rate-limited, and `true` otherwise.
-+     */
-+    call<ApiType extends keyof RateLimitedApis>(origin: string, type: ApiType, ...args: Parameters<RateLimitedApis[ApiType]['method']>): Promise<ReturnType<RateLimitedApis[ApiType]['method']>>;
-+    /**
-+     * Checks whether an origin is rate limited for the a specific API.
-+     *
-+     * @param api - The API the origin is trying to access.
-+     * @param origin - The origin trying to access the API.
-+     * @returns `true` if rate-limited, and `false` otherwise.
-+     */
-+    private isRateLimited;
-+    /**
-+     * Records that an origin has made a request to call an API, for rate-limiting purposes.
-+     *
-+     * @param api - The API the origin is trying to access.
-+     * @param origin - The origin trying to access the API.
-+     */
-+    private recordRequest;
-+    /**
-+     * Resets the request count for a given origin and API combination, for rate-limiting purposes.
-+     *
-+     * @param api - The API in question.
-+     * @param origin - The origin in question.
-+     */
-+    private resetRequestCount;
-+}
-+export {};
-+//# sourceMappingURL=RateLimitController.d.ts.map
-\ No newline at end of file
-diff --git a/dist/RateLimitController.d.ts.map b/dist/RateLimitController.d.ts.map
-new file mode 100644
-index 0000000000000000000000000000000000000000..403147b66feb5faf63222a8e33ef32d8615e51a8
---- /dev/null
-+++ b/dist/RateLimitController.d.ts.map
-@@ -0,0 +1 @@
-+{"version":3,"file":"RateLimitController.d.ts","sourceRoot":"","sources":["../src/RateLimitController.ts"],"names":[],"mappings":"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"}
-\ No newline at end of file
-diff --git a/dist/RateLimitController.js b/dist/RateLimitController.js
-new file mode 100644
-index 0000000000000000000000000000000000000000..3446627fabe6734cc9e4d9eb0538d7bb16c1f62b
---- /dev/null
-+++ b/dist/RateLimitController.js
-@@ -0,0 +1,114 @@
-+"use strict";
-+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-+    return new (P || (P = Promise))(function (resolve, reject) {
-+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-+        step((generator = generator.apply(thisArg, _arguments || [])).next());
-+    });
-+};
-+Object.defineProperty(exports, "__esModule", { value: true });
-+exports.RateLimitController = void 0;
-+const eth_rpc_errors_1 = require("eth-rpc-errors");
-+const base_controller_1 = require("@metamask/base-controller");
-+const name = 'RateLimitController';
-+const metadata = {
-+    requests: { persist: false, anonymous: false },
-+};
-+/**
-+ * Controller with logic for rate-limiting API endpoints per requesting origin.
-+ */
-+class RateLimitController extends base_controller_1.BaseControllerV2 {
-+    /**
-+     * Creates a RateLimitController instance.
-+     *
-+     * @param options - Constructor options.
-+     * @param options.messenger - A reference to the messaging system.
-+     * @param options.state - Initial state to set on this controller.
-+     * @param options.implementations - Mapping from API type to API implementation.
-+     * @param options.rateLimitTimeout - The time window in which the rate limit is applied (in ms).
-+     * @param options.rateLimitCount - The amount of calls an origin can make in the rate limit time window.
-+     */
-+    constructor({ rateLimitTimeout = 5000, rateLimitCount = 1, messenger, state, implementations, }) {
-+        const defaultState = {
-+            requests: Object.keys(implementations).reduce((acc, key) => (Object.assign(Object.assign({}, acc), { [key]: {} })), {}),
-+        };
-+        super({
-+            name,
-+            metadata,
-+            messenger,
-+            state: Object.assign(Object.assign({}, defaultState), state),
-+        });
-+        this.implementations = implementations;
-+        this.rateLimitTimeout = rateLimitTimeout;
-+        this.rateLimitCount = rateLimitCount;
-+        this.messagingSystem.registerActionHandler(`${name}:call`, ((origin, type, ...args) => this.call(origin, type, ...args)));
-+    }
-+    /**
-+     * Calls an API if the requesting origin is not rate-limited.
-+     *
-+     * @param origin - The requesting origin.
-+     * @param type - The type of API call to make.
-+     * @param args - Arguments for the API call.
-+     * @returns `false` if rate-limited, and `true` otherwise.
-+     */
-+    call(origin, type, ...args) {
-+        return __awaiter(this, void 0, void 0, function* () {
-+            if (this.isRateLimited(type, origin)) {
-+                throw eth_rpc_errors_1.ethErrors.rpc.limitExceeded({
-+                    message: `"${type.toString()}" is currently rate-limited. Please try again later.`,
-+                });
-+            }
-+            this.recordRequest(type, origin);
-+            const implementation = this.implementations[type].method;
-+            if (!implementation) {
-+                throw new Error('Invalid api type');
-+            }
-+            return implementation(...args);
-+        });
-+    }
-+    /**
-+     * Checks whether an origin is rate limited for the a specific API.
-+     *
-+     * @param api - The API the origin is trying to access.
-+     * @param origin - The origin trying to access the API.
-+     * @returns `true` if rate-limited, and `false` otherwise.
-+     */
-+    isRateLimited(api, origin) {
-+        var _a;
-+        const rateLimitCount = (_a = this.implementations[api].rateLimitCount) !== null && _a !== void 0 ? _a : this.rateLimitCount;
-+        return this.state.requests[api][origin] >= rateLimitCount;
-+    }
-+    /**
-+     * Records that an origin has made a request to call an API, for rate-limiting purposes.
-+     *
-+     * @param api - The API the origin is trying to access.
-+     * @param origin - The origin trying to access the API.
-+     */
-+    recordRequest(api, origin) {
-+        var _a;
-+        const rateLimitTimeout = (_a = this.implementations[api].rateLimitTimeout) !== null && _a !== void 0 ? _a : this.rateLimitTimeout;
-+        this.update((state) => {
-+            var _a;
-+            const previous = (_a = state.requests[api][origin]) !== null && _a !== void 0 ? _a : 0;
-+            state.requests[api][origin] = previous + 1;
-+            if (previous === 0) {
-+                setTimeout(() => this.resetRequestCount(api, origin), rateLimitTimeout);
-+            }
-+        });
-+    }
-+    /**
-+     * Resets the request count for a given origin and API combination, for rate-limiting purposes.
-+     *
-+     * @param api - The API in question.
-+     * @param origin - The origin in question.
-+     */
-+    resetRequestCount(api, origin) {
-+        this.update((state) => {
-+            state.requests[api][origin] = 0;
-+        });
-+    }
-+}
-+exports.RateLimitController = RateLimitController;
-+//# sourceMappingURL=RateLimitController.js.map
-\ No newline at end of file
-diff --git a/dist/RateLimitController.js.map b/dist/RateLimitController.js.map
-new file mode 100644
-index 0000000000000000000000000000000000000000..79b510cc58c47767bdf6420af52bf5754bdf00cd
---- /dev/null
-+++ b/dist/RateLimitController.js.map
-@@ -0,0 +1 @@
-+{"version":3,"file":"RateLimitController.js","sourceRoot":"","sources":["../src/RateLimitController.ts"],"names":[],"mappings":"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","sourcesContent":["import { ethErrors } from 'eth-rpc-errors';\nimport type { Patch } from 'immer';\nimport {\n  BaseControllerV2 as BaseController,\n  RestrictedControllerMessenger,\n} from '@metamask/base-controller';\n\n/**\n * @type RateLimitedApi\n * @property method - The method that is rate-limited.\n * @property rateLimitTimeout - The time window in which the rate limit is applied (in ms).\n * @property rateLimitCount - The amount of calls an origin can make in the rate limit time window.\n */\nexport type RateLimitedApi = {\n  method: (...args: any[]) => any;\n  rateLimitTimeout?: number;\n  rateLimitCount?: number;\n};\n\n/**\n * @type RateLimitState\n * @property requests - Object containing number of requests in a given interval for each origin and api type combination\n */\nexport type RateLimitState<\n  RateLimitedApis extends Record<string, RateLimitedApi>,\n> = {\n  requests: Record<keyof RateLimitedApis, Record<string, number>>;\n};\n\nconst name = 'RateLimitController';\n\nexport type RateLimitStateChange<\n  RateLimitedApis extends Record<string, RateLimitedApi>,\n> = {\n  type: `${typeof name}:stateChange`;\n  payload: [RateLimitState<RateLimitedApis>, Patch[]];\n};\n\nexport type GetRateLimitState<\n  RateLimitedApis extends Record<string, RateLimitedApi>,\n> = {\n  type: `${typeof name}:getState`;\n  handler: () => RateLimitState<RateLimitedApis>;\n};\n\nexport type CallApi<RateLimitedApis extends Record<string, RateLimitedApi>> = {\n  type: `${typeof name}:call`;\n  handler: RateLimitController<RateLimitedApis>['call'];\n};\n\nexport type RateLimitControllerActions<\n  RateLimitedApis extends Record<string, RateLimitedApi>,\n> = GetRateLimitState<RateLimitedApis> | CallApi<RateLimitedApis>;\n\nexport type RateLimitMessenger<\n  RateLimitedApis extends Record<string, RateLimitedApi>,\n> = RestrictedControllerMessenger<\n  typeof name,\n  RateLimitControllerActions<RateLimitedApis>,\n  RateLimitStateChange<RateLimitedApis>,\n  never,\n  never\n>;\n\nconst metadata = {\n  requests: { persist: false, anonymous: false },\n};\n\n/**\n * Controller with logic for rate-limiting API endpoints per requesting origin.\n */\nexport class RateLimitController<\n  RateLimitedApis extends Record<string, RateLimitedApi>,\n> extends BaseController<\n  typeof name,\n  RateLimitState<RateLimitedApis>,\n  RateLimitMessenger<RateLimitedApis>\n> {\n  private implementations;\n\n  private rateLimitTimeout;\n\n  private rateLimitCount;\n\n  /**\n   * Creates a RateLimitController instance.\n   *\n   * @param options - Constructor options.\n   * @param options.messenger - A reference to the messaging system.\n   * @param options.state - Initial state to set on this controller.\n   * @param options.implementations - Mapping from API type to API implementation.\n   * @param options.rateLimitTimeout - The time window in which the rate limit is applied (in ms).\n   * @param options.rateLimitCount - The amount of calls an origin can make in the rate limit time window.\n   */\n  constructor({\n    rateLimitTimeout = 5000,\n    rateLimitCount = 1,\n    messenger,\n    state,\n    implementations,\n  }: {\n    rateLimitTimeout?: number;\n    rateLimitCount?: number;\n    messenger: RateLimitMessenger<RateLimitedApis>;\n    state?: Partial<RateLimitState<RateLimitedApis>>;\n    implementations: RateLimitedApis;\n  }) {\n    const defaultState = {\n      requests: Object.keys(implementations).reduce(\n        (acc, key) => ({ ...acc, [key]: {} }),\n        {} as Record<keyof RateLimitedApis, Record<string, number>>,\n      ),\n    };\n    super({\n      name,\n      metadata,\n      messenger,\n      state: { ...defaultState, ...state },\n    });\n    this.implementations = implementations;\n    this.rateLimitTimeout = rateLimitTimeout;\n    this.rateLimitCount = rateLimitCount;\n\n    this.messagingSystem.registerActionHandler(\n      `${name}:call` as const,\n      ((\n        origin: string,\n        type: keyof RateLimitedApis,\n        ...args: Parameters<RateLimitedApis[keyof RateLimitedApis]['method']>\n      ) => this.call(origin, type, ...args)) as any,\n    );\n  }\n\n  /**\n   * Calls an API if the requesting origin is not rate-limited.\n   *\n   * @param origin - The requesting origin.\n   * @param type - The type of API call to make.\n   * @param args - Arguments for the API call.\n   * @returns `false` if rate-limited, and `true` otherwise.\n   */\n  async call<ApiType extends keyof RateLimitedApis>(\n    origin: string,\n    type: ApiType,\n    ...args: Parameters<RateLimitedApis[ApiType]['method']>\n  ): Promise<ReturnType<RateLimitedApis[ApiType]['method']>> {\n    if (this.isRateLimited(type, origin)) {\n      throw ethErrors.rpc.limitExceeded({\n        message: `\"${type.toString()}\" is currently rate-limited. Please try again later.`,\n      });\n    }\n    this.recordRequest(type, origin);\n\n    const implementation = this.implementations[type].method;\n\n    if (!implementation) {\n      throw new Error('Invalid api type');\n    }\n\n    return implementation(...args);\n  }\n\n  /**\n   * Checks whether an origin is rate limited for the a specific API.\n   *\n   * @param api - The API the origin is trying to access.\n   * @param origin - The origin trying to access the API.\n   * @returns `true` if rate-limited, and `false` otherwise.\n   */\n  private isRateLimited(api: keyof RateLimitedApis, origin: string) {\n    const rateLimitCount =\n      this.implementations[api].rateLimitCount ?? this.rateLimitCount;\n    return this.state.requests[api][origin] >= rateLimitCount;\n  }\n\n  /**\n   * Records that an origin has made a request to call an API, for rate-limiting purposes.\n   *\n   * @param api - The API the origin is trying to access.\n   * @param origin - The origin trying to access the API.\n   */\n  private recordRequest(api: keyof RateLimitedApis, origin: string) {\n    const rateLimitTimeout =\n      this.implementations[api].rateLimitTimeout ?? this.rateLimitTimeout;\n    this.update((state) => {\n      const previous = (state as any).requests[api][origin] ?? 0;\n      (state as any).requests[api][origin] = previous + 1;\n\n      if (previous === 0) {\n        setTimeout(() => this.resetRequestCount(api, origin), rateLimitTimeout);\n      }\n    });\n  }\n\n  /**\n   * Resets the request count for a given origin and API combination, for rate-limiting purposes.\n   *\n   * @param api - The API in question.\n   * @param origin - The origin in question.\n   */\n  private resetRequestCount(api: keyof RateLimitedApis, origin: string) {\n    this.update((state) => {\n      (state as any).requests[api][origin] = 0;\n    });\n  }\n}\n"]}
-\ No newline at end of file
 diff --git a/dist/SignatureController.d.ts b/dist/SignatureController.d.ts
-deleted file mode 100644
-index b336d0d2149d492e0b1c8df08e1bfae3ab81ff79..0000000000000000000000000000000000000000
+index b336d0d2149d492e0b1c8df08e1bfae3ab81ff79..708a4391cdbab13f89661ffcde522e7de252a269 100644
 --- a/dist/SignatureController.d.ts
-+++ /dev/null
-@@ -1,178 +0,0 @@
--/// <reference types="node" />
--import EventEmitter from 'events';
++++ b/dist/SignatureController.d.ts
+@@ -1,9 +1,10 @@
+ /// <reference types="node" />
+ import EventEmitter from 'events';
 -import { MessageParams, MessageParamsMetamask, PersonalMessageParams, PersonalMessageParamsMetamask, TypedMessageParams, TypedMessageParamsMetamask, AbstractMessage, AbstractMessageParams, OriginalRequest } from '@metamask/message-manager';
--import { BaseControllerV2, RestrictedControllerMessenger } from '@metamask/base-controller';
--import { Patch } from 'immer';
++import type { Hex } from '@metamask/utils';
++import { MessageParams, PersonalMessageParams, TypedMessageParams, AbstractMessage, AbstractMessageParams, OriginalRequest } from '@metamask/message-manager';
+ import { BaseControllerV2, RestrictedControllerMessenger } from '@metamask/base-controller';
+ import { Patch } from 'immer';
 -import { AcceptRequest, AddApprovalRequest, RejectRequest } from '@metamask/approval-controller';
--declare const controllerName = "SignatureController";
--declare type StateMessage = Required<AbstractMessage> & {
--    msgParams: Required<AbstractMessageParams>;
--};
--declare type SignatureControllerState = {
--    unapprovedMsgs: Record<string, StateMessage>;
--    unapprovedPersonalMsgs: Record<string, StateMessage>;
--    unapprovedTypedMessages: Record<string, StateMessage>;
--    unapprovedMsgCount: number;
--    unapprovedPersonalMsgCount: number;
--    unapprovedTypedMessagesCount: number;
--};
++import { AddApprovalRequest, RejectRequest } from '@metamask/approval-controller';
+ declare const controllerName = "SignatureController";
+ declare type StateMessage = Required<AbstractMessage> & {
+     msgParams: Required<AbstractMessageParams>;
+@@ -16,7 +17,7 @@ declare type SignatureControllerState = {
+     unapprovedPersonalMsgCount: number;
+     unapprovedTypedMessagesCount: number;
+ };
 -declare type AllowedActions = AddApprovalRequest | AcceptRequest | RejectRequest;
--export declare type GetSignatureState = {
--    type: `${typeof controllerName}:getState`;
--    handler: () => SignatureControllerState;
--};
--export declare type SignatureStateChange = {
--    type: `${typeof controllerName}:stateChange`;
--    payload: [SignatureControllerState, Patch[]];
--};
--export declare type SignatureControllerActions = GetSignatureState;
--export declare type SignatureControllerEvents = SignatureStateChange;
--export declare type SignatureControllerMessenger = RestrictedControllerMessenger<typeof controllerName, SignatureControllerActions | AllowedActions, SignatureControllerEvents, AllowedActions['type'], never>;
--export interface KeyringController {
--    signMessage: (messsageParams: MessageParams) => Promise<string>;
--    signPersonalMessage: (messsageParams: PersonalMessageParams) => Promise<string>;
--    signTypedMessage: (messsageParams: TypedMessageParams, options: {
--        version: string | undefined;
--    }) => Promise<string>;
--}
--export declare type SignatureControllerOptions = {
--    messenger: SignatureControllerMessenger;
--    keyringController: KeyringController;
--    isEthSignEnabled: () => boolean;
--    getAllState: () => unknown;
--    securityProviderRequest?: (requestData: any, methodName: string) => Promise<any>;
++declare type AllowedActions = AddApprovalRequest | RejectRequest;
+ export declare type GetSignatureState = {
+     type: `${typeof controllerName}:getState`;
+     handler: () => SignatureControllerState;
+@@ -41,7 +42,7 @@ export declare type SignatureControllerOptions = {
+     isEthSignEnabled: () => boolean;
+     getAllState: () => unknown;
+     securityProviderRequest?: (requestData: any, methodName: string) => Promise<any>;
 -    getCurrentChainId: () => string;
--};
--/**
-- * Controller for creating signing requests requiring user approval.
-- */
--export declare class SignatureController extends BaseControllerV2<typeof controllerName, SignatureControllerState, SignatureControllerMessenger> {
--    #private;
--    hub: EventEmitter;
--    /**
--     * Construct a Sign controller.
--     *
--     * @param options - The controller options.
--     * @param options.messenger - The restricted controller messenger for the sign controller.
--     * @param options.keyringController - An instance of a keyring controller used to perform the signing operations.
--     * @param options.isEthSignEnabled - Callback to return true if eth_sign is enabled.
--     * @param options.getAllState - Callback to retrieve all user state.
--     * @param options.securityProviderRequest - A function for verifying a message, whether it is malicious or not.
--     * @param options.getCurrentChainId - A function for retrieving the current chainId.
--     */
--    constructor({ messenger, keyringController, isEthSignEnabled, getAllState, securityProviderRequest, getCurrentChainId, }: SignatureControllerOptions);
--    /**
--     * A getter for the number of 'unapproved' Messages in this.messages.
--     *
--     * @returns The number of 'unapproved' Messages in this.messages
--     */
--    get unapprovedMsgCount(): number;
--    /**
--     * A getter for the number of 'unapproved' PersonalMessages in this.messages.
--     *
--     * @returns The number of 'unapproved' PersonalMessages in this.messages
--     */
--    get unapprovedPersonalMessagesCount(): number;
--    /**
--     * A getter for the number of 'unapproved' TypedMessages in this.messages.
--     *
--     * @returns The number of 'unapproved' TypedMessages in this.messages
--     */
--    get unapprovedTypedMessagesCount(): number;
--    /**
--     * Reset the controller state to the initial state.
--     */
--    resetState(): void;
--    /**
--     * Called when a Dapp uses the eth_sign method, to request user approval.
--     * eth_sign is a pure signature of arbitrary data. It is on a deprecation
--     * path, since this data can be a transaction, or can leak private key
--     * information.
--     *
++    getCurrentChainId: () => Hex;
+ };
+ /**
+  * Controller for creating signing requests requiring user approval.
+@@ -83,17 +84,27 @@ export declare class SignatureController extends BaseControllerV2<typeof control
+      * Reset the controller state to the initial state.
+      */
+     resetState(): void;
++    /**
++     * Reject all unapproved messages of any type.
++     *
++     * @param reason - A message to indicate why.
++     */
++    rejectUnapproved(reason?: string): void;
++    /**
++     * Clears all unapproved messages from memory.
++     */
++    clearUnapproved(): void;
+     /**
+      * Called when a Dapp uses the eth_sign method, to request user approval.
+      * eth_sign is a pure signature of arbitrary data. It is on a deprecation
+      * path, since this data can be a transaction, or can leak private key
+      * information.
+      *
 -     * @param msgParams - The params passed to eth_sign.
--     * @param [req] - The original request, containing the origin.
--     * @returns Promise resolving to the raw data of the signature request.
--     */
++     * @param messageParams - The params passed to eth_sign.
+      * @param [req] - The original request, containing the origin.
+      * @returns Promise resolving to the raw data of the signature request.
+      */
 -    newUnsignedMessage(msgParams: MessageParams, req: OriginalRequest): Promise<string>;
--    /**
--     * Called when a dapp uses the personal_sign method.
--     * This is identical to the Geth eth_sign method, and may eventually replace
--     * eth_sign.
--     *
--     * We currently define our eth_sign and personal_sign mostly for legacy Dapps.
--     *
++    newUnsignedMessage(messageParams: MessageParams, req: OriginalRequest): Promise<string>;
+     /**
+      * Called when a dapp uses the personal_sign method.
+      * This is identical to the Geth eth_sign method, and may eventually replace
+@@ -101,78 +112,24 @@ export declare class SignatureController extends BaseControllerV2<typeof control
+      *
+      * We currently define our eth_sign and personal_sign mostly for legacy Dapps.
+      *
 -     * @param msgParams - The params of the message to sign & return to the Dapp.
--     * @param req - The original request, containing the origin.
--     * @returns Promise resolving to the raw data of the signature request.
--     */
++     * @param messageParams - The params of the message to sign & return to the Dapp.
+      * @param req - The original request, containing the origin.
+      * @returns Promise resolving to the raw data of the signature request.
+      */
 -    newUnsignedPersonalMessage(msgParams: PersonalMessageParams, req: OriginalRequest): Promise<string>;
--    /**
--     * Called when a dapp uses the eth_signTypedData method, per EIP 712.
--     *
++    newUnsignedPersonalMessage(messageParams: PersonalMessageParams, req: OriginalRequest): Promise<string>;
+     /**
+      * Called when a dapp uses the eth_signTypedData method, per EIP 712.
+      *
 -     * @param msgParams - The params passed to eth_signTypedData.
--     * @param req - The original request, containing the origin.
--     * @param version - The version indicating the format of the typed data.
--     * @returns Promise resolving to the raw data of the signature request.
--     */
++     * @param messageParams - The params passed to eth_signTypedData.
+      * @param req - The original request, containing the origin.
+      * @param version - The version indicating the format of the typed data.
++     * @param opts - An options bag.
++     * @param opts.parseJsonData - Whether to parse the JSON before signing.
+      * @returns Promise resolving to the raw data of the signature request.
+      */
 -    newUnsignedTypedMessage(msgParams: TypedMessageParams, req: OriginalRequest, version: string): Promise<string>;
 -    /**
 -     * Signifies user intent to complete an eth_sign method.
@@ -383,7 +111,8 @@ index b336d0d2149d492e0b1c8df08e1bfae3ab81ff79..00000000000000000000000000000000
 -     * @returns Full state update.
 -     */
 -    signTypedMessage(msgParams: TypedMessageParamsMetamask, opts?: {
--        parseJsonData: boolean;
++    newUnsignedTypedMessage(messageParams: TypedMessageParams, req: OriginalRequest, version: string, opts?: {
+         parseJsonData: boolean;
 -    }): Promise<any>;
 -    /**
 -     * Used to cancel a message submitted via eth_sign.
@@ -416,216 +145,147 @@ index b336d0d2149d492e0b1c8df08e1bfae3ab81ff79..00000000000000000000000000000000
 -     * Clears all unapproved messages from memory.
 -     */
 -    clearUnapproved(): void;
--}
--export {};
--//# sourceMappingURL=SignatureController.d.ts.map
++    }): Promise<string>;
+ }
+ export {};
+ //# sourceMappingURL=SignatureController.d.ts.map
 \ No newline at end of file
 diff --git a/dist/SignatureController.d.ts.map b/dist/SignatureController.d.ts.map
-deleted file mode 100644
-index 7ed723edb55934e3ff4975cd460bf3e830df405b..0000000000000000000000000000000000000000
+index 7ed723edb55934e3ff4975cd460bf3e830df405b..981d55d40b4957f2cb9638ab2f362a1807758317 100644
 --- a/dist/SignatureController.d.ts.map
-+++ /dev/null
-@@ -1 +0,0 @@
++++ b/dist/SignatureController.d.ts.map
+@@ -1 +1 @@
 -{"version":3,"file":"SignatureController.d.ts","sourceRoot":"","sources":["../src/SignatureController.ts"],"names":[],"mappings":"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"}
 \ No newline at end of file
++{"version":3,"file":"SignatureController.d.ts","sourceRoot":"","sources":["../src/SignatureController.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
 diff --git a/dist/SignatureController.js b/dist/SignatureController.js
-deleted file mode 100644
-index 59dc5974218e8d073b65969154f35ada3fd9e8ab..0000000000000000000000000000000000000000
+index 59dc5974218e8d073b65969154f35ada3fd9e8ab..a5c2c54acbfe79fdc23c1b75344d0b4698ad4f35 100644
 --- a/dist/SignatureController.js
-+++ /dev/null
-@@ -1,394 +0,0 @@
--"use strict";
--var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
--    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
--    return new (P || (P = Promise))(function (resolve, reject) {
--        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
--        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
--        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
--        step((generator = generator.apply(thisArg, _arguments || [])).next());
--    });
--};
--var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
--    if (kind === "m") throw new TypeError("Private method is not writable");
--    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
--    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
--    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
--};
--var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
--    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
--    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
--    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
--};
--var __rest = (this && this.__rest) || function (s, e) {
--    var t = {};
--    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
--        t[p] = s[p];
--    if (s != null && typeof Object.getOwnPropertySymbols === "function")
--        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
--            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
--                t[p[i]] = s[p[i]];
--        }
--    return t;
--};
--var __importDefault = (this && this.__importDefault) || function (mod) {
--    return (mod && mod.__esModule) ? mod : { "default": mod };
--};
++++ b/dist/SignatureController.js
+@@ -33,10 +33,11 @@ var __rest = (this && this.__rest) || function (s, e) {
+ var __importDefault = (this && this.__importDefault) || function (mod) {
+     return (mod && mod.__esModule) ? mod : { "default": mod };
+ };
 -var _SignatureController_instances, _SignatureController_keyringController, _SignatureController_isEthSignEnabled, _SignatureController_getAllState, _SignatureController_messageManager, _SignatureController_personalMessageManager, _SignatureController_typedMessageManager, _SignatureController_rejectUnapproved, _SignatureController_clearUnapproved, _SignatureController_signAbstractMessage, _SignatureController_errorMessage, _SignatureController_cancelAbstractMessage, _SignatureController_handleMessageManagerEvents, _SignatureController_subscribeToMessageState, _SignatureController_migrateMessages, _SignatureController_migrateMessage, _SignatureController_normalizeMsgData, _SignatureController_getMessage, _SignatureController_requestApproval, _SignatureController_acceptApproval, _SignatureController_rejectApproval, _SignatureController_removeJsonData;
--Object.defineProperty(exports, "__esModule", { value: true });
--exports.SignatureController = void 0;
--const events_1 = __importDefault(require("events"));
--const message_manager_1 = require("@metamask/message-manager");
--const eth_rpc_errors_1 = require("eth-rpc-errors");
--const ethereumjs_util_1 = require("ethereumjs-util");
--const base_controller_1 = require("@metamask/base-controller");
--const controller_utils_1 = require("@metamask/controller-utils");
--const controllerName = 'SignatureController';
--const stateMetadata = {
--    unapprovedMsgs: { persist: false, anonymous: false },
--    unapprovedPersonalMsgs: { persist: false, anonymous: false },
--    unapprovedTypedMessages: { persist: false, anonymous: false },
--    unapprovedMsgCount: { persist: false, anonymous: false },
--    unapprovedPersonalMsgCount: { persist: false, anonymous: false },
--    unapprovedTypedMessagesCount: { persist: false, anonymous: false },
--};
--const getDefaultState = () => ({
--    unapprovedMsgs: {},
--    unapprovedPersonalMsgs: {},
--    unapprovedTypedMessages: {},
--    unapprovedMsgCount: 0,
--    unapprovedPersonalMsgCount: 0,
--    unapprovedTypedMessagesCount: 0,
--});
--/**
-- * Controller for creating signing requests requiring user approval.
-- */
--class SignatureController extends base_controller_1.BaseControllerV2 {
--    /**
--     * Construct a Sign controller.
--     *
--     * @param options - The controller options.
--     * @param options.messenger - The restricted controller messenger for the sign controller.
--     * @param options.keyringController - An instance of a keyring controller used to perform the signing operations.
--     * @param options.isEthSignEnabled - Callback to return true if eth_sign is enabled.
--     * @param options.getAllState - Callback to retrieve all user state.
--     * @param options.securityProviderRequest - A function for verifying a message, whether it is malicious or not.
--     * @param options.getCurrentChainId - A function for retrieving the current chainId.
--     */
--    constructor({ messenger, keyringController, isEthSignEnabled, getAllState, securityProviderRequest, getCurrentChainId, }) {
--        super({
--            name: controllerName,
--            metadata: stateMetadata,
--            messenger,
--            state: getDefaultState(),
--        });
--        _SignatureController_instances.add(this);
--        _SignatureController_keyringController.set(this, void 0);
--        _SignatureController_isEthSignEnabled.set(this, void 0);
--        _SignatureController_getAllState.set(this, void 0);
--        _SignatureController_messageManager.set(this, void 0);
--        _SignatureController_personalMessageManager.set(this, void 0);
--        _SignatureController_typedMessageManager.set(this, void 0);
--        __classPrivateFieldSet(this, _SignatureController_keyringController, keyringController, "f");
--        __classPrivateFieldSet(this, _SignatureController_isEthSignEnabled, isEthSignEnabled, "f");
--        __classPrivateFieldSet(this, _SignatureController_getAllState, getAllState, "f");
--        this.hub = new events_1.default();
--        __classPrivateFieldSet(this, _SignatureController_messageManager, new message_manager_1.MessageManager(undefined, undefined, securityProviderRequest), "f");
--        __classPrivateFieldSet(this, _SignatureController_personalMessageManager, new message_manager_1.PersonalMessageManager(undefined, undefined, securityProviderRequest), "f");
--        __classPrivateFieldSet(this, _SignatureController_typedMessageManager, new message_manager_1.TypedMessageManager(undefined, undefined, securityProviderRequest, undefined, getCurrentChainId), "f");
++var _SignatureController_instances, _SignatureController_keyringController, _SignatureController_isEthSignEnabled, _SignatureController_getAllState, _SignatureController_messageManager, _SignatureController_personalMessageManager, _SignatureController_typedMessageManager, _SignatureController_signMessage, _SignatureController_signPersonalMessage, _SignatureController_signTypedMessage, _SignatureController_rejectUnapproved, _SignatureController_clearUnapproved, _SignatureController_signAbstractMessage, _SignatureController_cancelAbstractMessage, _SignatureController_handleMessageManagerEvents, _SignatureController_subscribeToMessageState, _SignatureController_migrateMessages, _SignatureController_migrateMessage, _SignatureController_normalizeMsgData, _SignatureController_getMessage, _SignatureController_requestApproval, _SignatureController_removeJsonData;
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.SignatureController = void 0;
+ const events_1 = __importDefault(require("events"));
++const lodash_1 = require("lodash");
+ const message_manager_1 = require("@metamask/message-manager");
+ const eth_rpc_errors_1 = require("eth-rpc-errors");
+ const ethereumjs_util_1 = require("ethereumjs-util");
+@@ -95,9 +96,9 @@ class SignatureController extends base_controller_1.BaseControllerV2 {
+         __classPrivateFieldSet(this, _SignatureController_messageManager, new message_manager_1.MessageManager(undefined, undefined, securityProviderRequest), "f");
+         __classPrivateFieldSet(this, _SignatureController_personalMessageManager, new message_manager_1.PersonalMessageManager(undefined, undefined, securityProviderRequest), "f");
+         __classPrivateFieldSet(this, _SignatureController_typedMessageManager, new message_manager_1.TypedMessageManager(undefined, undefined, securityProviderRequest, undefined, getCurrentChainId), "f");
 -        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_handleMessageManagerEvents).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"), controller_utils_1.ApprovalType.EthSign, 'unapprovedMessage');
 -        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_handleMessageManagerEvents).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"), controller_utils_1.ApprovalType.PersonalSign, 'unapprovedPersonalMessage');
 -        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_handleMessageManagerEvents).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"), controller_utils_1.ApprovalType.EthSignTypedData, 'unapprovedTypedMessage');
--        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_subscribeToMessageState).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"), (state, newMessages, messageCount) => {
--            state.unapprovedMsgs = newMessages;
--            state.unapprovedMsgCount = messageCount;
--        });
--        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_subscribeToMessageState).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"), (state, newMessages, messageCount) => {
--            state.unapprovedPersonalMsgs = newMessages;
--            state.unapprovedPersonalMsgCount = messageCount;
--        });
--        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_subscribeToMessageState).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"), (state, newMessages, messageCount) => {
--            state.unapprovedTypedMessages = newMessages;
--            state.unapprovedTypedMessagesCount = messageCount;
--        });
--    }
--    /**
--     * A getter for the number of 'unapproved' Messages in this.messages.
--     *
--     * @returns The number of 'unapproved' Messages in this.messages
--     */
--    get unapprovedMsgCount() {
--        return __classPrivateFieldGet(this, _SignatureController_messageManager, "f").getUnapprovedMessagesCount();
--    }
--    /**
--     * A getter for the number of 'unapproved' PersonalMessages in this.messages.
--     *
--     * @returns The number of 'unapproved' PersonalMessages in this.messages
--     */
--    get unapprovedPersonalMessagesCount() {
--        return __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f").getUnapprovedMessagesCount();
--    }
--    /**
--     * A getter for the number of 'unapproved' TypedMessages in this.messages.
--     *
--     * @returns The number of 'unapproved' TypedMessages in this.messages
--     */
--    get unapprovedTypedMessagesCount() {
--        return __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f").getUnapprovedMessagesCount();
--    }
--    /**
--     * Reset the controller state to the initial state.
--     */
--    resetState() {
--        this.update(() => getDefaultState());
--    }
--    /**
--     * Called when a Dapp uses the eth_sign method, to request user approval.
--     * eth_sign is a pure signature of arbitrary data. It is on a deprecation
--     * path, since this data can be a transaction, or can leak private key
--     * information.
--     *
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_handleMessageManagerEvents).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"), 'unapprovedMessage');
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_handleMessageManagerEvents).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"), 'unapprovedPersonalMessage');
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_handleMessageManagerEvents).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"), 'unapprovedTypedMessage');
+         __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_subscribeToMessageState).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"), (state, newMessages, messageCount) => {
+             state.unapprovedMsgs = newMessages;
+             state.unapprovedMsgCount = messageCount;
+@@ -141,29 +142,56 @@ class SignatureController extends base_controller_1.BaseControllerV2 {
+     resetState() {
+         this.update(() => getDefaultState());
+     }
++    /**
++     * Reject all unapproved messages of any type.
++     *
++     * @param reason - A message to indicate why.
++     */
++    rejectUnapproved(reason) {
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_rejectUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"), reason);
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_rejectUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"), reason);
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_rejectUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"), reason);
++    }
++    /**
++     * Clears all unapproved messages from memory.
++     */
++    clearUnapproved() {
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_clearUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"));
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_clearUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"));
++        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_clearUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"));
++    }
+     /**
+      * Called when a Dapp uses the eth_sign method, to request user approval.
+      * eth_sign is a pure signature of arbitrary data. It is on a deprecation
+      * path, since this data can be a transaction, or can leak private key
+      * information.
+      *
 -     * @param msgParams - The params passed to eth_sign.
--     * @param [req] - The original request, containing the origin.
--     * @returns Promise resolving to the raw data of the signature request.
--     */
++     * @param messageParams - The params passed to eth_sign.
+      * @param [req] - The original request, containing the origin.
+      * @returns Promise resolving to the raw data of the signature request.
+      */
 -    newUnsignedMessage(msgParams, req) {
--        return __awaiter(this, void 0, void 0, function* () {
--            if (!__classPrivateFieldGet(this, _SignatureController_isEthSignEnabled, "f").call(this)) {
--                throw eth_rpc_errors_1.ethErrors.rpc.methodNotFound('eth_sign has been disabled. You must enable it in the advanced settings');
--            }
++    newUnsignedMessage(messageParams, req) {
+         return __awaiter(this, void 0, void 0, function* () {
+             if (!__classPrivateFieldGet(this, _SignatureController_isEthSignEnabled, "f").call(this)) {
+                 throw eth_rpc_errors_1.ethErrors.rpc.methodNotFound('eth_sign has been disabled. You must enable it in the advanced settings');
+             }
 -            const data = __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_normalizeMsgData).call(this, msgParams.data);
--            // 64 hex + "0x" at the beginning
--            // This is needed because Ethereum's EcSign works only on 32 byte numbers
--            // For 67 length see: https://github.com/MetaMask/metamask-extension/pull/12679/files#r749479607
--            if (data.length !== 66 && data.length !== 67) {
--                throw eth_rpc_errors_1.ethErrors.rpc.invalidParams('eth_sign requires 32 byte message hash');
--            }
++            const data = __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_normalizeMsgData).call(this, messageParams.data);
+             // 64 hex + "0x" at the beginning
+             // This is needed because Ethereum's EcSign works only on 32 byte numbers
+             // For 67 length see: https://github.com/MetaMask/metamask-extension/pull/12679/files#r749479607
+             if (data.length !== 66 && data.length !== 67) {
+                 throw eth_rpc_errors_1.ethErrors.rpc.invalidParams('eth_sign requires 32 byte message hash');
+             }
 -            return __classPrivateFieldGet(this, _SignatureController_messageManager, "f").addUnapprovedMessageAsync(msgParams, req);
--        });
--    }
--    /**
--     * Called when a dapp uses the personal_sign method.
--     * This is identical to the Geth eth_sign method, and may eventually replace
--     * eth_sign.
--     *
--     * We currently define our eth_sign and personal_sign mostly for legacy Dapps.
--     *
++            const messageId = yield __classPrivateFieldGet(this, _SignatureController_messageManager, "f").addUnapprovedMessage(messageParams, req);
++            const messageParamsWithId = Object.assign(Object.assign({}, messageParams), { metamaskId: messageId });
++            try {
++                yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_requestApproval).call(this, messageParamsWithId, controller_utils_1.ApprovalType.EthSign);
++            }
++            catch (error) {
++                __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_cancelAbstractMessage).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"), messageId);
++                throw eth_rpc_errors_1.ethErrors.provider.userRejectedRequest('User rejected the request.');
++            }
++            return yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_signMessage).call(this, (0, lodash_1.cloneDeep)(messageParamsWithId));
+         });
+     }
+     /**
+@@ -173,121 +201,70 @@ class SignatureController extends base_controller_1.BaseControllerV2 {
+      *
+      * We currently define our eth_sign and personal_sign mostly for legacy Dapps.
+      *
 -     * @param msgParams - The params of the message to sign & return to the Dapp.
--     * @param req - The original request, containing the origin.
--     * @returns Promise resolving to the raw data of the signature request.
--     */
++     * @param messageParams - The params of the message to sign & return to the Dapp.
+      * @param req - The original request, containing the origin.
+      * @returns Promise resolving to the raw data of the signature request.
+      */
 -    newUnsignedPersonalMessage(msgParams, req) {
--        return __awaiter(this, void 0, void 0, function* () {
++    newUnsignedPersonalMessage(messageParams, req) {
+         return __awaiter(this, void 0, void 0, function* () {
 -            return __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f").addUnapprovedMessageAsync(msgParams, req);
--        });
--    }
--    /**
--     * Called when a dapp uses the eth_signTypedData method, per EIP 712.
--     *
++            const messageId = yield __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f").addUnapprovedMessage(messageParams, req);
++            const messageParamsWithId = Object.assign(Object.assign({}, messageParams), { metamaskId: messageId });
++            try {
++                yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_requestApproval).call(this, messageParamsWithId, controller_utils_1.ApprovalType.PersonalSign);
++            }
++            catch (error) {
++                __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_cancelAbstractMessage).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"), messageId);
++                throw eth_rpc_errors_1.ethErrors.provider.userRejectedRequest('User rejected the request.');
++            }
++            return yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_signPersonalMessage).call(this, (0, lodash_1.cloneDeep)(messageParamsWithId));
+         });
+     }
+     /**
+      * Called when a dapp uses the eth_signTypedData method, per EIP 712.
+      *
 -     * @param msgParams - The params passed to eth_signTypedData.
--     * @param req - The original request, containing the origin.
--     * @param version - The version indicating the format of the typed data.
--     * @returns Promise resolving to the raw data of the signature request.
--     */
++     * @param messageParams - The params passed to eth_signTypedData.
+      * @param req - The original request, containing the origin.
+      * @param version - The version indicating the format of the typed data.
++     * @param opts - An options bag.
++     * @param opts.parseJsonData - Whether to parse the JSON before signing.
+      * @returns Promise resolving to the raw data of the signature request.
+      */
 -    newUnsignedTypedMessage(msgParams, req, version) {
 -        return __awaiter(this, void 0, void 0, function* () {
 -            return __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f").addUnapprovedMessageAsync(msgParams, version, req);
@@ -664,7 +324,8 @@ index 59dc5974218e8d073b65969154f35ada3fd9e8ab..00000000000000000000000000000000
 -     * @returns Full state update.
 -     */
 -    signTypedMessage(msgParams, opts = { parseJsonData: true }) {
--        return __awaiter(this, void 0, void 0, function* () {
++    newUnsignedTypedMessage(messageParams, req, version, opts = { parseJsonData: true }) {
+         return __awaiter(this, void 0, void 0, function* () {
 -            const { version } = msgParams;
 -            return yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_signAbstractMessage).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"), controller_utils_1.ApprovalType.EthSignTypedData, msgParams, (cleanMsgParams) => __awaiter(this, void 0, void 0, function* () {
 -                const finalMessageParams = opts.parseJsonData
@@ -674,8 +335,18 @@ index 59dc5974218e8d073b65969154f35ada3fd9e8ab..00000000000000000000000000000000
 -                    version,
 -                });
 -            }));
--        });
--    }
++            const messageId = yield __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f").addUnapprovedMessage(messageParams, version, req);
++            const messageParamsWithId = Object.assign(Object.assign({}, messageParams), { metamaskId: messageId });
++            try {
++                yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_requestApproval).call(this, messageParamsWithId, controller_utils_1.ApprovalType.EthSignTypedData);
++            }
++            catch (error) {
++                __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_cancelAbstractMessage).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"), messageId);
++                throw eth_rpc_errors_1.ethErrors.provider.userRejectedRequest('User rejected the request.');
++            }
++            return yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_signTypedMessage).call(this, (0, lodash_1.cloneDeep)(messageParamsWithId), version, opts);
+         });
+     }
 -    /**
 -     * Used to cancel a message submitted via eth_sign.
 -     *
@@ -721,34 +392,51 @@ index 59dc5974218e8d073b65969154f35ada3fd9e8ab..00000000000000000000000000000000
 -        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_clearUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"));
 -        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_clearUnapproved).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"));
 -    }
--}
--exports.SignatureController = SignatureController;
+ }
+ exports.SignatureController = SignatureController;
 -_SignatureController_keyringController = new WeakMap(), _SignatureController_isEthSignEnabled = new WeakMap(), _SignatureController_getAllState = new WeakMap(), _SignatureController_messageManager = new WeakMap(), _SignatureController_personalMessageManager = new WeakMap(), _SignatureController_typedMessageManager = new WeakMap(), _SignatureController_instances = new WeakSet(), _SignatureController_rejectUnapproved = function _SignatureController_rejectUnapproved(messageManager, reason) {
--    Object.keys(messageManager.getUnapprovedMessages()).forEach((messageId) => {
--        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_cancelAbstractMessage).call(this, messageManager, messageId, reason);
--    });
--}, _SignatureController_clearUnapproved = function _SignatureController_clearUnapproved(messageManager) {
--    messageManager.update({
--        unapprovedMessages: {},
--        unapprovedMessagesCount: 0,
--    });
--}, _SignatureController_signAbstractMessage = function _SignatureController_signAbstractMessage(messageManager, methodName, msgParams, getSignature) {
--    return __awaiter(this, void 0, void 0, function* () {
--        console.info(`MetaMaskController - ${methodName}`);
--        const messageId = msgParams.metamaskId;
--        try {
--            const cleanMessageParams = yield messageManager.approveMessage(msgParams);
--            const signature = yield getSignature(cleanMessageParams);
++_SignatureController_keyringController = new WeakMap(), _SignatureController_isEthSignEnabled = new WeakMap(), _SignatureController_getAllState = new WeakMap(), _SignatureController_messageManager = new WeakMap(), _SignatureController_personalMessageManager = new WeakMap(), _SignatureController_typedMessageManager = new WeakMap(), _SignatureController_instances = new WeakSet(), _SignatureController_signMessage = function _SignatureController_signMessage(msgParams) {
++    return __awaiter(this, void 0, void 0, function* () {
++        return yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_signAbstractMessage).call(this, __classPrivateFieldGet(this, _SignatureController_messageManager, "f"), controller_utils_1.ApprovalType.EthSign, msgParams, (cleanMsgParams) => __awaiter(this, void 0, void 0, function* () { return yield __classPrivateFieldGet(this, _SignatureController_keyringController, "f").signMessage(cleanMsgParams); }));
++    });
++}, _SignatureController_signPersonalMessage = function _SignatureController_signPersonalMessage(msgParams) {
++    return __awaiter(this, void 0, void 0, function* () {
++        return yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_signAbstractMessage).call(this, __classPrivateFieldGet(this, _SignatureController_personalMessageManager, "f"), controller_utils_1.ApprovalType.PersonalSign, msgParams, (cleanMsgParams) => __awaiter(this, void 0, void 0, function* () { return yield __classPrivateFieldGet(this, _SignatureController_keyringController, "f").signPersonalMessage(cleanMsgParams); }));
++    });
++}, _SignatureController_signTypedMessage = function _SignatureController_signTypedMessage(msgParams, version, opts) {
++    return __awaiter(this, void 0, void 0, function* () {
++        return yield __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_signAbstractMessage).call(this, __classPrivateFieldGet(this, _SignatureController_typedMessageManager, "f"), controller_utils_1.ApprovalType.EthSignTypedData, msgParams, (cleanMsgParams) => __awaiter(this, void 0, void 0, function* () {
++            const finalMessageParams = opts.parseJsonData
++                ? __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_removeJsonData).call(this, cleanMsgParams, version)
++                : cleanMsgParams;
++            return yield __classPrivateFieldGet(this, _SignatureController_keyringController, "f").signTypedMessage(finalMessageParams, {
++                version,
++            });
++        }));
++    });
++}, _SignatureController_rejectUnapproved = function _SignatureController_rejectUnapproved(messageManager, reason) {
+     Object.keys(messageManager.getUnapprovedMessages()).forEach((messageId) => {
+         __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_cancelAbstractMessage).call(this, messageManager, messageId, reason);
+     });
+@@ -303,39 +280,29 @@ _SignatureController_keyringController = new WeakMap(), _SignatureController_isE
+         try {
+             const cleanMessageParams = yield messageManager.approveMessage(msgParams);
+             const signature = yield getSignature(cleanMessageParams);
 -            messageManager.setMessageStatusSigned(messageId, signature);
 -            __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_acceptApproval).call(this, messageId);
 -            return __classPrivateFieldGet(this, _SignatureController_getAllState, "f").call(this);
--        }
--        catch (error) {
--            console.info(`MetaMaskController - ${methodName} failed.`, error);
++            this.hub.emit(`${methodName}:signed`, { signature, messageId });
++            if (!cleanMessageParams.deferSetAsSigned) {
++                messageManager.setMessageStatusSigned(messageId, signature);
++            }
++            return signature;
+         }
+         catch (error) {
+             console.info(`MetaMaskController - ${methodName} failed.`, error);
 -            __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_errorMessage).call(this, messageManager, messageId, error.message);
--            throw error;
--        }
--    });
+             throw error;
+         }
+     });
 -}, _SignatureController_errorMessage = function _SignatureController_errorMessage(messageManager, messageId, error) {
 -    if (messageManager instanceof message_manager_1.TypedMessageManager) {
 -        messageManager.setMessageStatusErrored(messageId, error);
@@ -757,54 +445,29 @@ index 59dc5974218e8d073b65969154f35ada3fd9e8ab..00000000000000000000000000000000
 -    else {
 -        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_cancelAbstractMessage).call(this, messageManager, messageId);
 -    }
--}, _SignatureController_cancelAbstractMessage = function _SignatureController_cancelAbstractMessage(messageManager, messageId, reason) {
--    if (reason) {
--        const message = __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_getMessage).call(this, messageId);
--        this.hub.emit('cancelWithReason', { message, reason });
--    }
--    messageManager.rejectMessage(messageId);
+ }, _SignatureController_cancelAbstractMessage = function _SignatureController_cancelAbstractMessage(messageManager, messageId, reason) {
+     if (reason) {
+         const message = __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_getMessage).call(this, messageId);
+         this.hub.emit('cancelWithReason', { message, reason });
+     }
+     messageManager.rejectMessage(messageId);
 -    __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_rejectApproval).call(this, messageId);
 -    return __classPrivateFieldGet(this, _SignatureController_getAllState, "f").call(this);
 -}, _SignatureController_handleMessageManagerEvents = function _SignatureController_handleMessageManagerEvents(messageManager, approvalType, eventName) {
--    messageManager.hub.on('updateBadge', () => {
--        this.hub.emit('updateBadge');
--    });
--    messageManager.hub.on('unapprovedMessage', (msgParams) => {
--        this.hub.emit(eventName, msgParams);
++}, _SignatureController_handleMessageManagerEvents = function _SignatureController_handleMessageManagerEvents(messageManager, eventName) {
+     messageManager.hub.on('updateBadge', () => {
+         this.hub.emit('updateBadge');
+     });
+     messageManager.hub.on('unapprovedMessage', (msgParams) => {
+         this.hub.emit(eventName, msgParams);
 -        __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_requestApproval).call(this, msgParams, approvalType);
--    });
--}, _SignatureController_subscribeToMessageState = function _SignatureController_subscribeToMessageState(messageManager, updateState) {
--    messageManager.subscribe((state) => {
--        const newMessages = __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_migrateMessages).call(this, state.unapprovedMessages);
--        this.update(() => {
--            const newState = Object.assign({}, this.state);
--            updateState(newState, newMessages, state.unapprovedMessagesCount);
--            return newState;
--        });
--    });
--}, _SignatureController_migrateMessages = function _SignatureController_migrateMessages(coreMessages) {
--    const stateMessages = {};
--    for (const messageId of Object.keys(coreMessages)) {
--        const coreMessage = coreMessages[messageId];
--        const stateMessage = __classPrivateFieldGet(this, _SignatureController_instances, "m", _SignatureController_migrateMessage).call(this, coreMessage);
--        stateMessages[messageId] = stateMessage;
--    }
--    return stateMessages;
--}, _SignatureController_migrateMessage = function _SignatureController_migrateMessage(coreMessage) {
--    const { messageParams } = coreMessage, coreMessageData = __rest(coreMessage, ["messageParams"]);
--    // Core message managers use messageParams but frontend uses msgParams with lots of references
--    const stateMessage = Object.assign(Object.assign({}, coreMessageData), { msgParams: messageParams });
--    return stateMessage;
--}, _SignatureController_normalizeMsgData = function _SignatureController_normalizeMsgData(data) {
--    if (data.slice(0, 2) === '0x') {
--        // data is already hex
--        return data;
--    }
--    // data is unicode, convert to hex
--    return (0, ethereumjs_util_1.bufferToHex)(Buffer.from(data, 'utf8'));
--}, _SignatureController_getMessage = function _SignatureController_getMessage(messageId) {
--    return Object.assign(Object.assign(Object.assign({}, this.state.unapprovedMsgs), this.state.unapprovedPersonalMsgs), this.state.unapprovedTypedMessages)[messageId];
--}, _SignatureController_requestApproval = function _SignatureController_requestApproval(msgParams, type) {
+     });
+ }, _SignatureController_subscribeToMessageState = function _SignatureController_subscribeToMessageState(messageManager, updateState) {
+     messageManager.subscribe((state) => {
+@@ -369,22 +336,16 @@ _SignatureController_keyringController = new WeakMap(), _SignatureController_isE
+ }, _SignatureController_getMessage = function _SignatureController_getMessage(messageId) {
+     return Object.assign(Object.assign(Object.assign({}, this.state.unapprovedMsgs), this.state.unapprovedPersonalMsgs), this.state.unapprovedTypedMessages)[messageId];
+ }, _SignatureController_requestApproval = function _SignatureController_requestApproval(msgParams, type) {
 -    const id = msgParams.metamaskId;
 -    const origin = msgParams.origin || controller_utils_1.ORIGIN_METAMASK;
 -    this.messagingSystem
@@ -816,54 +479,29 @@ index 59dc5974218e8d073b65969154f35ada3fd9e8ab..00000000000000000000000000000000
 -    }, true)
 -        .catch(() => {
 -        // Intentionally ignored as promise not currently used
--    });
++    return __awaiter(this, void 0, void 0, function* () {
++        const id = msgParams.metamaskId;
++        const origin = msgParams.origin || controller_utils_1.ORIGIN_METAMASK;
++        return this.messagingSystem.call('ApprovalController:addRequest', {
++            id,
++            origin,
++            type,
++            requestData: msgParams,
++        }, true);
+     });
 -}, _SignatureController_acceptApproval = function _SignatureController_acceptApproval(messageId) {
 -    this.messagingSystem.call('ApprovalController:acceptRequest', messageId);
 -}, _SignatureController_rejectApproval = function _SignatureController_rejectApproval(messageId) {
 -    this.messagingSystem.call('ApprovalController:rejectRequest', messageId, 'Cancel');
--}, _SignatureController_removeJsonData = function _SignatureController_removeJsonData(messageParams, version) {
--    if (version === 'V1' || typeof messageParams.data !== 'string') {
--        return messageParams;
--    }
--    return Object.assign(Object.assign({}, messageParams), { data: JSON.parse(messageParams.data) });
--};
--//# sourceMappingURL=SignatureController.js.map
-\ No newline at end of file
+ }, _SignatureController_removeJsonData = function _SignatureController_removeJsonData(messageParams, version) {
+     if (version === 'V1' || typeof messageParams.data !== 'string') {
+         return messageParams;
 diff --git a/dist/SignatureController.js.map b/dist/SignatureController.js.map
-deleted file mode 100644
-index 99f17a7580b4c85d4816406d9a483f088924d115..0000000000000000000000000000000000000000
+index 99f17a7580b4c85d4816406d9a483f088924d115..1d2dac7d9195d7b5c9677dfd3c0ac5abd4fba70f 100644
 --- a/dist/SignatureController.js.map
-+++ /dev/null
-@@ -1 +0,0 @@
++++ b/dist/SignatureController.js.map
+@@ -1 +1 @@
 -{"version":3,"file":"SignatureController.js","sourceRoot":"","sources":["../src/SignatureController.ts"],"names":[],"mappings":"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","sourcesContent":["import EventEmitter from 'events';\nimport {\n  MessageManager,\n  MessageParams,\n  MessageParamsMetamask,\n  PersonalMessageManager,\n  PersonalMessageParams,\n  PersonalMessageParamsMetamask,\n  TypedMessageManager,\n  TypedMessageParams,\n  TypedMessageParamsMetamask,\n  AbstractMessageManager,\n  AbstractMessage,\n  MessageManagerState,\n  AbstractMessageParams,\n  AbstractMessageParamsMetamask,\n  OriginalRequest,\n} from '@metamask/message-manager';\nimport { ethErrors } from 'eth-rpc-errors';\nimport { bufferToHex } from 'ethereumjs-util';\n\nimport {\n  BaseControllerV2,\n  RestrictedControllerMessenger,\n} from '@metamask/base-controller';\nimport { Patch } from 'immer';\nimport {\n  AcceptRequest,\n  AddApprovalRequest,\n  RejectRequest,\n} from '@metamask/approval-controller';\nimport { ApprovalType, ORIGIN_METAMASK } from '@metamask/controller-utils';\n\nconst controllerName = 'SignatureController';\n\nconst stateMetadata = {\n  unapprovedMsgs: { persist: false, anonymous: false },\n  unapprovedPersonalMsgs: { persist: false, anonymous: false },\n  unapprovedTypedMessages: { persist: false, anonymous: false },\n  unapprovedMsgCount: { persist: false, anonymous: false },\n  unapprovedPersonalMsgCount: { persist: false, anonymous: false },\n  unapprovedTypedMessagesCount: { persist: false, anonymous: false },\n};\n\nconst getDefaultState = () => ({\n  unapprovedMsgs: {},\n  unapprovedPersonalMsgs: {},\n  unapprovedTypedMessages: {},\n  unapprovedMsgCount: 0,\n  unapprovedPersonalMsgCount: 0,\n  unapprovedTypedMessagesCount: 0,\n});\n\ntype CoreMessage = AbstractMessage & {\n  messageParams: AbstractMessageParams;\n};\n\ntype StateMessage = Required<AbstractMessage> & {\n  msgParams: Required<AbstractMessageParams>;\n};\n\ntype SignatureControllerState = {\n  unapprovedMsgs: Record<string, StateMessage>;\n  unapprovedPersonalMsgs: Record<string, StateMessage>;\n  unapprovedTypedMessages: Record<string, StateMessage>;\n  unapprovedMsgCount: number;\n  unapprovedPersonalMsgCount: number;\n  unapprovedTypedMessagesCount: number;\n};\n\ntype AllowedActions = AddApprovalRequest | AcceptRequest | RejectRequest;\n\nexport type GetSignatureState = {\n  type: `${typeof controllerName}:getState`;\n  handler: () => SignatureControllerState;\n};\n\nexport type SignatureStateChange = {\n  type: `${typeof controllerName}:stateChange`;\n  payload: [SignatureControllerState, Patch[]];\n};\n\nexport type SignatureControllerActions = GetSignatureState;\n\nexport type SignatureControllerEvents = SignatureStateChange;\n\nexport type SignatureControllerMessenger = RestrictedControllerMessenger<\n  typeof controllerName,\n  SignatureControllerActions | AllowedActions,\n  SignatureControllerEvents,\n  AllowedActions['type'],\n  never\n>;\n\nexport interface KeyringController {\n  signMessage: (messsageParams: MessageParams) => Promise<string>;\n  signPersonalMessage: (\n    messsageParams: PersonalMessageParams,\n  ) => Promise<string>;\n  signTypedMessage: (\n    messsageParams: TypedMessageParams,\n    options: { version: string | undefined },\n  ) => Promise<string>;\n}\n\nexport type SignatureControllerOptions = {\n  messenger: SignatureControllerMessenger;\n  keyringController: KeyringController;\n  isEthSignEnabled: () => boolean;\n  getAllState: () => unknown;\n  securityProviderRequest?: (\n    requestData: any,\n    methodName: string,\n  ) => Promise<any>;\n  getCurrentChainId: () => string;\n};\n\n/**\n * Controller for creating signing requests requiring user approval.\n */\nexport class SignatureController extends BaseControllerV2<\n  typeof controllerName,\n  SignatureControllerState,\n  SignatureControllerMessenger\n> {\n  hub: EventEmitter;\n\n  #keyringController: KeyringController;\n\n  #isEthSignEnabled: () => boolean;\n\n  #getAllState: () => any;\n\n  #messageManager: MessageManager;\n\n  #personalMessageManager: PersonalMessageManager;\n\n  #typedMessageManager: TypedMessageManager;\n\n  /**\n   * Construct a Sign controller.\n   *\n   * @param options - The controller options.\n   * @param options.messenger - The restricted controller messenger for the sign controller.\n   * @param options.keyringController - An instance of a keyring controller used to perform the signing operations.\n   * @param options.isEthSignEnabled - Callback to return true if eth_sign is enabled.\n   * @param options.getAllState - Callback to retrieve all user state.\n   * @param options.securityProviderRequest - A function for verifying a message, whether it is malicious or not.\n   * @param options.getCurrentChainId - A function for retrieving the current chainId.\n   */\n  constructor({\n    messenger,\n    keyringController,\n    isEthSignEnabled,\n    getAllState,\n    securityProviderRequest,\n    getCurrentChainId,\n  }: SignatureControllerOptions) {\n    super({\n      name: controllerName,\n      metadata: stateMetadata,\n      messenger,\n      state: getDefaultState(),\n    });\n\n    this.#keyringController = keyringController;\n    this.#isEthSignEnabled = isEthSignEnabled;\n    this.#getAllState = getAllState;\n\n    this.hub = new EventEmitter();\n    this.#messageManager = new MessageManager(\n      undefined,\n      undefined,\n      securityProviderRequest,\n    );\n    this.#personalMessageManager = new PersonalMessageManager(\n      undefined,\n      undefined,\n      securityProviderRequest,\n    );\n    this.#typedMessageManager = new TypedMessageManager(\n      undefined,\n      undefined,\n      securityProviderRequest,\n      undefined,\n      getCurrentChainId,\n    );\n\n    this.#handleMessageManagerEvents(\n      this.#messageManager,\n      ApprovalType.EthSign,\n      'unapprovedMessage',\n    );\n    this.#handleMessageManagerEvents(\n      this.#personalMessageManager,\n      ApprovalType.PersonalSign,\n      'unapprovedPersonalMessage',\n    );\n    this.#handleMessageManagerEvents(\n      this.#typedMessageManager,\n      ApprovalType.EthSignTypedData,\n      'unapprovedTypedMessage',\n    );\n\n    this.#subscribeToMessageState(\n      this.#messageManager,\n      (state, newMessages, messageCount) => {\n        state.unapprovedMsgs = newMessages;\n        state.unapprovedMsgCount = messageCount;\n      },\n    );\n\n    this.#subscribeToMessageState(\n      this.#personalMessageManager,\n      (state, newMessages, messageCount) => {\n        state.unapprovedPersonalMsgs = newMessages;\n        state.unapprovedPersonalMsgCount = messageCount;\n      },\n    );\n\n    this.#subscribeToMessageState(\n      this.#typedMessageManager,\n      (state, newMessages, messageCount) => {\n        state.unapprovedTypedMessages = newMessages;\n        state.unapprovedTypedMessagesCount = messageCount;\n      },\n    );\n  }\n\n  /**\n   * A getter for the number of 'unapproved' Messages in this.messages.\n   *\n   * @returns The number of 'unapproved' Messages in this.messages\n   */\n  get unapprovedMsgCount(): number {\n    return this.#messageManager.getUnapprovedMessagesCount();\n  }\n\n  /**\n   * A getter for the number of 'unapproved' PersonalMessages in this.messages.\n   *\n   * @returns The number of 'unapproved' PersonalMessages in this.messages\n   */\n  get unapprovedPersonalMessagesCount(): number {\n    return this.#personalMessageManager.getUnapprovedMessagesCount();\n  }\n\n  /**\n   * A getter for the number of 'unapproved' TypedMessages in this.messages.\n   *\n   * @returns The number of 'unapproved' TypedMessages in this.messages\n   */\n  get unapprovedTypedMessagesCount(): number {\n    return this.#typedMessageManager.getUnapprovedMessagesCount();\n  }\n\n  /**\n   * Reset the controller state to the initial state.\n   */\n  resetState() {\n    this.update(() => getDefaultState());\n  }\n\n  /**\n   * Called when a Dapp uses the eth_sign method, to request user approval.\n   * eth_sign is a pure signature of arbitrary data. It is on a deprecation\n   * path, since this data can be a transaction, or can leak private key\n   * information.\n   *\n   * @param msgParams - The params passed to eth_sign.\n   * @param [req] - The original request, containing the origin.\n   * @returns Promise resolving to the raw data of the signature request.\n   */\n  async newUnsignedMessage(\n    msgParams: MessageParams,\n    req: OriginalRequest,\n  ): Promise<string> {\n    if (!this.#isEthSignEnabled()) {\n      throw ethErrors.rpc.methodNotFound(\n        'eth_sign has been disabled. You must enable it in the advanced settings',\n      );\n    }\n\n    const data = this.#normalizeMsgData(msgParams.data);\n\n    // 64 hex + \"0x\" at the beginning\n    // This is needed because Ethereum's EcSign works only on 32 byte numbers\n    // For 67 length see: https://github.com/MetaMask/metamask-extension/pull/12679/files#r749479607\n    if (data.length !== 66 && data.length !== 67) {\n      throw ethErrors.rpc.invalidParams(\n        'eth_sign requires 32 byte message hash',\n      );\n    }\n\n    return this.#messageManager.addUnapprovedMessageAsync(msgParams, req);\n  }\n\n  /**\n   * Called when a dapp uses the personal_sign method.\n   * This is identical to the Geth eth_sign method, and may eventually replace\n   * eth_sign.\n   *\n   * We currently define our eth_sign and personal_sign mostly for legacy Dapps.\n   *\n   * @param msgParams - The params of the message to sign & return to the Dapp.\n   * @param req - The original request, containing the origin.\n   * @returns Promise resolving to the raw data of the signature request.\n   */\n  async newUnsignedPersonalMessage(\n    msgParams: PersonalMessageParams,\n    req: OriginalRequest,\n  ): Promise<string> {\n    return this.#personalMessageManager.addUnapprovedMessageAsync(\n      msgParams,\n      req,\n    );\n  }\n\n  /**\n   * Called when a dapp uses the eth_signTypedData method, per EIP 712.\n   *\n   * @param msgParams - The params passed to eth_signTypedData.\n   * @param req - The original request, containing the origin.\n   * @param version - The version indicating the format of the typed data.\n   * @returns Promise resolving to the raw data of the signature request.\n   */\n  async newUnsignedTypedMessage(\n    msgParams: TypedMessageParams,\n    req: OriginalRequest,\n    version: string,\n  ): Promise<string> {\n    return this.#typedMessageManager.addUnapprovedMessageAsync(\n      msgParams,\n      version,\n      req,\n    );\n  }\n\n  /**\n   * Signifies user intent to complete an eth_sign method.\n   *\n   * @param msgParams - The params passed to eth_call.\n   * @returns Full state update.\n   */\n  async signMessage(msgParams: MessageParamsMetamask) {\n    return await this.#signAbstractMessage(\n      this.#messageManager,\n      ApprovalType.EthSign,\n      msgParams,\n      async (cleanMsgParams) =>\n        await this.#keyringController.signMessage(cleanMsgParams),\n    );\n  }\n\n  /**\n   * Signifies a user's approval to sign a personal_sign message in queue.\n   * Triggers signing, and the callback function from newUnsignedPersonalMessage.\n   *\n   * @param msgParams - The params of the message to sign & return to the Dapp.\n   * @returns A full state update.\n   */\n  async signPersonalMessage(msgParams: PersonalMessageParamsMetamask) {\n    return await this.#signAbstractMessage(\n      this.#personalMessageManager,\n      ApprovalType.PersonalSign,\n      msgParams,\n      async (cleanMsgParams) =>\n        await this.#keyringController.signPersonalMessage(cleanMsgParams),\n    );\n  }\n\n  /**\n   * The method for a user approving a call to eth_signTypedData, per EIP 712.\n   * Triggers the callback in newUnsignedTypedMessage.\n   *\n   * @param msgParams - The params passed to eth_signTypedData.\n   * @param opts - Options bag.\n   * @param opts.parseJsonData - Whether to parse JSON data before calling the KeyringController.\n   * @returns Full state update.\n   */\n  async signTypedMessage(\n    msgParams: TypedMessageParamsMetamask,\n    opts: { parseJsonData: boolean } = { parseJsonData: true },\n  ): Promise<any> {\n    const { version } = msgParams;\n\n    return await this.#signAbstractMessage(\n      this.#typedMessageManager,\n      ApprovalType.EthSignTypedData,\n      msgParams,\n      async (cleanMsgParams) => {\n        const finalMessageParams = opts.parseJsonData\n          ? this.#removeJsonData(cleanMsgParams, version as string)\n          : cleanMsgParams;\n\n        return await this.#keyringController.signTypedMessage(\n          finalMessageParams,\n          {\n            version,\n          },\n        );\n      },\n    );\n  }\n\n  /**\n   * Used to cancel a message submitted via eth_sign.\n   *\n   * @param msgId - The id of the message to cancel.\n   * @returns A full state update.\n   */\n  cancelMessage(msgId: string): any {\n    return this.#cancelAbstractMessage(this.#messageManager, msgId);\n  }\n\n  /**\n   * Used to cancel a personal_sign type message.\n   *\n   * @param msgId - The ID of the message to cancel.\n   * @returns A full state update.\n   */\n  cancelPersonalMessage(msgId: string): any {\n    return this.#cancelAbstractMessage(this.#personalMessageManager, msgId);\n  }\n\n  /**\n   * Used to cancel a eth_signTypedData type message.\n   *\n   * @param msgId - The ID of the message to cancel.\n   * @returns A full state update.\n   */\n  cancelTypedMessage(msgId: string): any {\n    return this.#cancelAbstractMessage(this.#typedMessageManager, msgId);\n  }\n\n  /**\n   * Reject all unapproved messages of any type.\n   *\n   * @param reason - A message to indicate why.\n   */\n  rejectUnapproved(reason?: string) {\n    this.#rejectUnapproved(this.#messageManager, reason);\n    this.#rejectUnapproved(this.#personalMessageManager, reason);\n    this.#rejectUnapproved(this.#typedMessageManager, reason);\n  }\n\n  /**\n   * Clears all unapproved messages from memory.\n   */\n  clearUnapproved() {\n    this.#clearUnapproved(this.#messageManager);\n    this.#clearUnapproved(this.#personalMessageManager);\n    this.#clearUnapproved(this.#typedMessageManager);\n  }\n\n  #rejectUnapproved<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(messageManager: AbstractMessageManager<M, P, PM>, reason?: string) {\n    Object.keys(messageManager.getUnapprovedMessages()).forEach((messageId) => {\n      this.#cancelAbstractMessage(messageManager, messageId, reason);\n    });\n  }\n\n  #clearUnapproved<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(messageManager: AbstractMessageManager<M, P, PM>) {\n    messageManager.update({\n      unapprovedMessages: {},\n      unapprovedMessagesCount: 0,\n    });\n  }\n\n  async #signAbstractMessage<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    methodName: string,\n    msgParams: PM,\n    getSignature: (cleanMessageParams: P) => Promise<any>,\n  ) {\n    console.info(`MetaMaskController - ${methodName}`);\n\n    const messageId = msgParams.metamaskId as string;\n\n    try {\n      const cleanMessageParams = await messageManager.approveMessage(msgParams);\n      const signature = await getSignature(cleanMessageParams);\n\n      messageManager.setMessageStatusSigned(messageId, signature);\n\n      this.#acceptApproval(messageId);\n\n      return this.#getAllState();\n    } catch (error: any) {\n      console.info(`MetaMaskController - ${methodName} failed.`, error);\n      this.#errorMessage(messageManager, messageId, error.message);\n      throw error;\n    }\n  }\n\n  #errorMessage<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    messageId: string,\n    error: string,\n  ) {\n    if (messageManager instanceof TypedMessageManager) {\n      messageManager.setMessageStatusErrored(messageId, error);\n      this.#rejectApproval(messageId);\n    } else {\n      this.#cancelAbstractMessage(messageManager, messageId);\n    }\n  }\n\n  #cancelAbstractMessage<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    messageId: string,\n    reason?: string,\n  ) {\n    if (reason) {\n      const message = this.#getMessage(messageId);\n      this.hub.emit('cancelWithReason', { message, reason });\n    }\n\n    messageManager.rejectMessage(messageId);\n    this.#rejectApproval(messageId);\n\n    return this.#getAllState();\n  }\n\n  #handleMessageManagerEvents<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    approvalType: ApprovalType,\n    eventName: string,\n  ) {\n    messageManager.hub.on('updateBadge', () => {\n      this.hub.emit('updateBadge');\n    });\n\n    messageManager.hub.on(\n      'unapprovedMessage',\n      (msgParams: AbstractMessageParamsMetamask) => {\n        this.hub.emit(eventName, msgParams);\n        this.#requestApproval(msgParams, approvalType);\n      },\n    );\n  }\n\n  #subscribeToMessageState<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    updateState: (\n      state: SignatureControllerState,\n      newMessages: Record<string, StateMessage>,\n      messageCount: number,\n    ) => void,\n  ) {\n    messageManager.subscribe((state: MessageManagerState<AbstractMessage>) => {\n      const newMessages = this.#migrateMessages(\n        state.unapprovedMessages as any,\n      );\n\n      this.update(() => {\n        const newState = { ...this.state };\n        updateState(newState, newMessages, state.unapprovedMessagesCount);\n        return newState;\n      });\n    });\n  }\n\n  #migrateMessages(\n    coreMessages: Record<string, CoreMessage>,\n  ): Record<string, StateMessage> {\n    const stateMessages: Record<string, StateMessage> = {};\n\n    for (const messageId of Object.keys(coreMessages)) {\n      const coreMessage = coreMessages[messageId];\n      const stateMessage = this.#migrateMessage(coreMessage);\n\n      stateMessages[messageId] = stateMessage;\n    }\n\n    return stateMessages;\n  }\n\n  #migrateMessage(coreMessage: CoreMessage): StateMessage {\n    const { messageParams, ...coreMessageData } = coreMessage;\n\n    // Core message managers use messageParams but frontend uses msgParams with lots of references\n    const stateMessage = {\n      ...coreMessageData,\n      msgParams: messageParams,\n    };\n\n    return stateMessage as StateMessage;\n  }\n\n  #normalizeMsgData(data: string) {\n    if (data.slice(0, 2) === '0x') {\n      // data is already hex\n      return data;\n    }\n    // data is unicode, convert to hex\n    return bufferToHex(Buffer.from(data, 'utf8'));\n  }\n\n  #getMessage(messageId: string): StateMessage {\n    return {\n      ...this.state.unapprovedMsgs,\n      ...this.state.unapprovedPersonalMsgs,\n      ...this.state.unapprovedTypedMessages,\n    }[messageId];\n  }\n\n  #requestApproval(\n    msgParams: AbstractMessageParamsMetamask,\n    type: ApprovalType,\n  ) {\n    const id = msgParams.metamaskId as string;\n    const origin = msgParams.origin || ORIGIN_METAMASK;\n\n    this.messagingSystem\n      .call(\n        'ApprovalController:addRequest',\n        {\n          id,\n          origin,\n          type,\n          requestData: msgParams as Required<AbstractMessageParamsMetamask>,\n        },\n        true,\n      )\n      .catch(() => {\n        // Intentionally ignored as promise not currently used\n      });\n  }\n\n  #acceptApproval(messageId: string) {\n    this.messagingSystem.call('ApprovalController:acceptRequest', messageId);\n  }\n\n  #rejectApproval(messageId: string) {\n    this.messagingSystem.call(\n      'ApprovalController:rejectRequest',\n      messageId,\n      'Cancel',\n    );\n  }\n\n  #removeJsonData(\n    messageParams: TypedMessageParams,\n    version: string,\n  ): TypedMessageParams {\n    if (version === 'V1' || typeof messageParams.data !== 'string') {\n      return messageParams;\n    }\n\n    return {\n      ...messageParams,\n      data: JSON.parse(messageParams.data),\n    };\n  }\n}\n"]}
 \ No newline at end of file
-diff --git a/dist/index.d.ts b/dist/index.d.ts
-index ccb37770473a85dcbbdbae850ab848741fb298a8..f67835d0057efce3ab932a4134806be79a91d14f 100644
---- a/dist/index.d.ts
-+++ b/dist/index.d.ts
-@@ -1,2 +1,2 @@
--export * from './SignatureController';
-+export * from './RateLimitController';
- //# sourceMappingURL=index.d.ts.map
-\ No newline at end of file
-diff --git a/dist/index.js b/dist/index.js
-index 62a963e40018d3cc63639e8d5f6e690e27f5af42..3ef70469cb0ff2d8657b119352b1073e791ac3be 100644
---- a/dist/index.js
-+++ b/dist/index.js
-@@ -14,5 +14,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
-     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
- };
- Object.defineProperty(exports, "__esModule", { value: true });
--__exportStar(require("./SignatureController"), exports);
-+__exportStar(require("./RateLimitController"), exports);
- //# sourceMappingURL=index.js.map
-\ No newline at end of file
-diff --git a/dist/index.js.map b/dist/index.js.map
-index 231fb10614a67485bc62e89507a067a9a0f1bcbb..b3bb11d0bca1d9c785f5906470ab9ba545bc0802 100644
---- a/dist/index.js.map
-+++ b/dist/index.js.map
-@@ -1 +1 @@
--{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,wDAAsC","sourcesContent":["export * from './SignatureController';\n"]}
-\ No newline at end of file
-+{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;AAAA,wDAAsC","sourcesContent":["export * from './RateLimitController';\n"]}
++{"version":3,"file":"SignatureController.js","sourceRoot":"","sources":["../src/SignatureController.ts"],"names":[],"mappings":"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","sourcesContent":["import EventEmitter from 'events';\nimport type { Hex } from '@metamask/utils';\nimport { cloneDeep } from 'lodash';\nimport {\n  MessageManager,\n  MessageParams,\n  MessageParamsMetamask,\n  PersonalMessageManager,\n  PersonalMessageParams,\n  PersonalMessageParamsMetamask,\n  TypedMessageManager,\n  TypedMessageParams,\n  TypedMessageParamsMetamask,\n  AbstractMessageManager,\n  AbstractMessage,\n  MessageManagerState,\n  AbstractMessageParams,\n  AbstractMessageParamsMetamask,\n  OriginalRequest,\n} from '@metamask/message-manager';\nimport { ethErrors } from 'eth-rpc-errors';\nimport { bufferToHex } from 'ethereumjs-util';\n\nimport {\n  BaseControllerV2,\n  RestrictedControllerMessenger,\n} from '@metamask/base-controller';\nimport { Patch } from 'immer';\nimport {\n  AddApprovalRequest,\n  RejectRequest,\n} from '@metamask/approval-controller';\nimport { ApprovalType, ORIGIN_METAMASK } from '@metamask/controller-utils';\n\nconst controllerName = 'SignatureController';\n\nconst stateMetadata = {\n  unapprovedMsgs: { persist: false, anonymous: false },\n  unapprovedPersonalMsgs: { persist: false, anonymous: false },\n  unapprovedTypedMessages: { persist: false, anonymous: false },\n  unapprovedMsgCount: { persist: false, anonymous: false },\n  unapprovedPersonalMsgCount: { persist: false, anonymous: false },\n  unapprovedTypedMessagesCount: { persist: false, anonymous: false },\n};\n\nconst getDefaultState = () => ({\n  unapprovedMsgs: {},\n  unapprovedPersonalMsgs: {},\n  unapprovedTypedMessages: {},\n  unapprovedMsgCount: 0,\n  unapprovedPersonalMsgCount: 0,\n  unapprovedTypedMessagesCount: 0,\n});\n\ntype CoreMessage = AbstractMessage & {\n  messageParams: AbstractMessageParams;\n};\n\ntype StateMessage = Required<AbstractMessage> & {\n  msgParams: Required<AbstractMessageParams>;\n};\n\ntype SignatureControllerState = {\n  unapprovedMsgs: Record<string, StateMessage>;\n  unapprovedPersonalMsgs: Record<string, StateMessage>;\n  unapprovedTypedMessages: Record<string, StateMessage>;\n  unapprovedMsgCount: number;\n  unapprovedPersonalMsgCount: number;\n  unapprovedTypedMessagesCount: number;\n};\n\ntype AllowedActions = AddApprovalRequest | RejectRequest;\n\nexport type GetSignatureState = {\n  type: `${typeof controllerName}:getState`;\n  handler: () => SignatureControllerState;\n};\n\nexport type SignatureStateChange = {\n  type: `${typeof controllerName}:stateChange`;\n  payload: [SignatureControllerState, Patch[]];\n};\n\nexport type SignatureControllerActions = GetSignatureState;\n\nexport type SignatureControllerEvents = SignatureStateChange;\n\nexport type SignatureControllerMessenger = RestrictedControllerMessenger<\n  typeof controllerName,\n  SignatureControllerActions | AllowedActions,\n  SignatureControllerEvents,\n  AllowedActions['type'],\n  never\n>;\n\nexport interface KeyringController {\n  signMessage: (messsageParams: MessageParams) => Promise<string>;\n  signPersonalMessage: (\n    messsageParams: PersonalMessageParams,\n  ) => Promise<string>;\n  signTypedMessage: (\n    messsageParams: TypedMessageParams,\n    options: { version: string | undefined },\n  ) => Promise<string>;\n}\n\nexport type SignatureControllerOptions = {\n  messenger: SignatureControllerMessenger;\n  keyringController: KeyringController;\n  isEthSignEnabled: () => boolean;\n  getAllState: () => unknown;\n  securityProviderRequest?: (\n    requestData: any,\n    methodName: string,\n  ) => Promise<any>;\n  getCurrentChainId: () => Hex;\n};\n\n/**\n * Controller for creating signing requests requiring user approval.\n */\nexport class SignatureController extends BaseControllerV2<\n  typeof controllerName,\n  SignatureControllerState,\n  SignatureControllerMessenger\n> {\n  hub: EventEmitter;\n\n  #keyringController: KeyringController;\n\n  #isEthSignEnabled: () => boolean;\n\n  #getAllState: () => any;\n\n  #messageManager: MessageManager;\n\n  #personalMessageManager: PersonalMessageManager;\n\n  #typedMessageManager: TypedMessageManager;\n\n  /**\n   * Construct a Sign controller.\n   *\n   * @param options - The controller options.\n   * @param options.messenger - The restricted controller messenger for the sign controller.\n   * @param options.keyringController - An instance of a keyring controller used to perform the signing operations.\n   * @param options.isEthSignEnabled - Callback to return true if eth_sign is enabled.\n   * @param options.getAllState - Callback to retrieve all user state.\n   * @param options.securityProviderRequest - A function for verifying a message, whether it is malicious or not.\n   * @param options.getCurrentChainId - A function for retrieving the current chainId.\n   */\n  constructor({\n    messenger,\n    keyringController,\n    isEthSignEnabled,\n    getAllState,\n    securityProviderRequest,\n    getCurrentChainId,\n  }: SignatureControllerOptions) {\n    super({\n      name: controllerName,\n      metadata: stateMetadata,\n      messenger,\n      state: getDefaultState(),\n    });\n\n    this.#keyringController = keyringController;\n    this.#isEthSignEnabled = isEthSignEnabled;\n    this.#getAllState = getAllState;\n\n    this.hub = new EventEmitter();\n    this.#messageManager = new MessageManager(\n      undefined,\n      undefined,\n      securityProviderRequest,\n    );\n    this.#personalMessageManager = new PersonalMessageManager(\n      undefined,\n      undefined,\n      securityProviderRequest,\n    );\n    this.#typedMessageManager = new TypedMessageManager(\n      undefined,\n      undefined,\n      securityProviderRequest,\n      undefined,\n      getCurrentChainId,\n    );\n\n    this.#handleMessageManagerEvents(this.#messageManager, 'unapprovedMessage');\n    this.#handleMessageManagerEvents(\n      this.#personalMessageManager,\n      'unapprovedPersonalMessage',\n    );\n    this.#handleMessageManagerEvents(\n      this.#typedMessageManager,\n      'unapprovedTypedMessage',\n    );\n\n    this.#subscribeToMessageState(\n      this.#messageManager,\n      (state, newMessages, messageCount) => {\n        state.unapprovedMsgs = newMessages;\n        state.unapprovedMsgCount = messageCount;\n      },\n    );\n\n    this.#subscribeToMessageState(\n      this.#personalMessageManager,\n      (state, newMessages, messageCount) => {\n        state.unapprovedPersonalMsgs = newMessages;\n        state.unapprovedPersonalMsgCount = messageCount;\n      },\n    );\n\n    this.#subscribeToMessageState(\n      this.#typedMessageManager,\n      (state, newMessages, messageCount) => {\n        state.unapprovedTypedMessages = newMessages;\n        state.unapprovedTypedMessagesCount = messageCount;\n      },\n    );\n  }\n\n  /**\n   * A getter for the number of 'unapproved' Messages in this.messages.\n   *\n   * @returns The number of 'unapproved' Messages in this.messages\n   */\n  get unapprovedMsgCount(): number {\n    return this.#messageManager.getUnapprovedMessagesCount();\n  }\n\n  /**\n   * A getter for the number of 'unapproved' PersonalMessages in this.messages.\n   *\n   * @returns The number of 'unapproved' PersonalMessages in this.messages\n   */\n  get unapprovedPersonalMessagesCount(): number {\n    return this.#personalMessageManager.getUnapprovedMessagesCount();\n  }\n\n  /**\n   * A getter for the number of 'unapproved' TypedMessages in this.messages.\n   *\n   * @returns The number of 'unapproved' TypedMessages in this.messages\n   */\n  get unapprovedTypedMessagesCount(): number {\n    return this.#typedMessageManager.getUnapprovedMessagesCount();\n  }\n\n  /**\n   * Reset the controller state to the initial state.\n   */\n  resetState() {\n    this.update(() => getDefaultState());\n  }\n\n  /**\n   * Reject all unapproved messages of any type.\n   *\n   * @param reason - A message to indicate why.\n   */\n  rejectUnapproved(reason?: string) {\n    this.#rejectUnapproved(this.#messageManager, reason);\n    this.#rejectUnapproved(this.#personalMessageManager, reason);\n    this.#rejectUnapproved(this.#typedMessageManager, reason);\n  }\n\n  /**\n   * Clears all unapproved messages from memory.\n   */\n  clearUnapproved() {\n    this.#clearUnapproved(this.#messageManager);\n    this.#clearUnapproved(this.#personalMessageManager);\n    this.#clearUnapproved(this.#typedMessageManager);\n  }\n\n  /**\n   * Called when a Dapp uses the eth_sign method, to request user approval.\n   * eth_sign is a pure signature of arbitrary data. It is on a deprecation\n   * path, since this data can be a transaction, or can leak private key\n   * information.\n   *\n   * @param messageParams - The params passed to eth_sign.\n   * @param [req] - The original request, containing the origin.\n   * @returns Promise resolving to the raw data of the signature request.\n   */\n  async newUnsignedMessage(\n    messageParams: MessageParams,\n    req: OriginalRequest,\n  ): Promise<string> {\n    if (!this.#isEthSignEnabled()) {\n      throw ethErrors.rpc.methodNotFound(\n        'eth_sign has been disabled. You must enable it in the advanced settings',\n      );\n    }\n\n    const data = this.#normalizeMsgData(messageParams.data);\n\n    // 64 hex + \"0x\" at the beginning\n    // This is needed because Ethereum's EcSign works only on 32 byte numbers\n    // For 67 length see: https://github.com/MetaMask/metamask-extension/pull/12679/files#r749479607\n    if (data.length !== 66 && data.length !== 67) {\n      throw ethErrors.rpc.invalidParams(\n        'eth_sign requires 32 byte message hash',\n      );\n    }\n\n    const messageId = await this.#messageManager.addUnapprovedMessage(\n      messageParams,\n      req,\n    );\n    const messageParamsWithId = {\n      ...messageParams,\n      metamaskId: messageId,\n    };\n\n    try {\n      await this.#requestApproval(messageParamsWithId, ApprovalType.EthSign);\n    } catch (error) {\n      this.#cancelAbstractMessage(this.#messageManager, messageId);\n      throw ethErrors.provider.userRejectedRequest(\n        'User rejected the request.',\n      );\n    }\n\n    return await this.#signMessage(cloneDeep(messageParamsWithId));\n  }\n\n  /**\n   * Called when a dapp uses the personal_sign method.\n   * This is identical to the Geth eth_sign method, and may eventually replace\n   * eth_sign.\n   *\n   * We currently define our eth_sign and personal_sign mostly for legacy Dapps.\n   *\n   * @param messageParams - The params of the message to sign & return to the Dapp.\n   * @param req - The original request, containing the origin.\n   * @returns Promise resolving to the raw data of the signature request.\n   */\n  async newUnsignedPersonalMessage(\n    messageParams: PersonalMessageParams,\n    req: OriginalRequest,\n  ): Promise<string> {\n    const messageId = await this.#personalMessageManager.addUnapprovedMessage(\n      messageParams,\n      req,\n    );\n    const messageParamsWithId = {\n      ...messageParams,\n      metamaskId: messageId,\n    };\n\n    try {\n      await this.#requestApproval(\n        messageParamsWithId,\n        ApprovalType.PersonalSign,\n      );\n    } catch (error) {\n      this.#cancelAbstractMessage(this.#personalMessageManager, messageId);\n      throw ethErrors.provider.userRejectedRequest(\n        'User rejected the request.',\n      );\n    }\n\n    return await this.#signPersonalMessage(cloneDeep(messageParamsWithId));\n  }\n\n  /**\n   * Called when a dapp uses the eth_signTypedData method, per EIP 712.\n   *\n   * @param messageParams - The params passed to eth_signTypedData.\n   * @param req - The original request, containing the origin.\n   * @param version - The version indicating the format of the typed data.\n   * @param opts - An options bag.\n   * @param opts.parseJsonData - Whether to parse the JSON before signing.\n   * @returns Promise resolving to the raw data of the signature request.\n   */\n  async newUnsignedTypedMessage(\n    messageParams: TypedMessageParams,\n    req: OriginalRequest,\n    version: string,\n    opts: { parseJsonData: boolean } = { parseJsonData: true },\n  ): Promise<string> {\n    const messageId = await this.#typedMessageManager.addUnapprovedMessage(\n      messageParams,\n      version,\n      req,\n    );\n    const messageParamsWithId = {\n      ...messageParams,\n      metamaskId: messageId,\n    };\n\n    try {\n      await this.#requestApproval(\n        messageParamsWithId,\n        ApprovalType.EthSignTypedData,\n      );\n    } catch (error) {\n      this.#cancelAbstractMessage(this.#typedMessageManager, messageId);\n      throw ethErrors.provider.userRejectedRequest(\n        'User rejected the request.',\n      );\n    }\n    return await this.#signTypedMessage(\n      cloneDeep(messageParamsWithId),\n      version,\n      opts,\n    );\n  }\n\n  /**\n   * Signifies user intent to complete an eth_sign method.\n   *\n   * @param msgParams - The params passed to eth_call.\n   * @returns Signature result from signing.\n   */\n  async #signMessage(msgParams: MessageParamsMetamask) {\n    return await this.#signAbstractMessage(\n      this.#messageManager,\n      ApprovalType.EthSign,\n      msgParams,\n      async (cleanMsgParams) =>\n        await this.#keyringController.signMessage(cleanMsgParams),\n    );\n  }\n\n  /**\n   * Signifies a user's approval to sign a personal_sign message in queue.\n   * Triggers signing, and the callback function from newUnsignedPersonalMessage.\n   *\n   * @param msgParams - The params of the message to sign & return to the Dapp.\n   * @returns Signature result from signing.\n   */\n  async #signPersonalMessage(msgParams: PersonalMessageParamsMetamask) {\n    return await this.#signAbstractMessage(\n      this.#personalMessageManager,\n      ApprovalType.PersonalSign,\n      msgParams,\n      async (cleanMsgParams) =>\n        await this.#keyringController.signPersonalMessage(cleanMsgParams),\n    );\n  }\n\n  /**\n   * The method for a user approving a call to eth_signTypedData, per EIP 712.\n   * Triggers the callback in newUnsignedTypedMessage.\n   *\n   * @param msgParams - The params passed to eth_signTypedData.\n   * @param version - The version indicating the format of the typed data.\n   * @param opts - The options for the method.\n   * @param opts.parseJsonData - Whether to parse JSON data before calling the KeyringController.\n   * @returns Signature result from signing.\n   */\n  async #signTypedMessage(\n    msgParams: TypedMessageParamsMetamask,\n    version: string,\n    opts: { parseJsonData: boolean },\n  ): Promise<any> {\n    return await this.#signAbstractMessage(\n      this.#typedMessageManager,\n      ApprovalType.EthSignTypedData,\n      msgParams,\n      async (cleanMsgParams) => {\n        const finalMessageParams = opts.parseJsonData\n          ? this.#removeJsonData(cleanMsgParams, version as string)\n          : cleanMsgParams;\n\n        return await this.#keyringController.signTypedMessage(\n          finalMessageParams,\n          {\n            version,\n          },\n        );\n      },\n    );\n  }\n\n  #rejectUnapproved<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(messageManager: AbstractMessageManager<M, P, PM>, reason?: string) {\n    Object.keys(messageManager.getUnapprovedMessages()).forEach((messageId) => {\n      this.#cancelAbstractMessage(messageManager, messageId, reason);\n    });\n  }\n\n  #clearUnapproved<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(messageManager: AbstractMessageManager<M, P, PM>) {\n    messageManager.update({\n      unapprovedMessages: {},\n      unapprovedMessagesCount: 0,\n    });\n  }\n\n  async #signAbstractMessage<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    methodName: string,\n    msgParams: PM,\n    getSignature: (cleanMessageParams: P) => Promise<any>,\n  ) {\n    console.info(`MetaMaskController - ${methodName}`);\n\n    const messageId = msgParams.metamaskId as string;\n\n    try {\n      const cleanMessageParams = await messageManager.approveMessage(msgParams);\n      const signature = await getSignature(cleanMessageParams);\n\n      this.hub.emit(`${methodName}:signed`, { signature, messageId });\n\n      if (!cleanMessageParams.deferSetAsSigned) {\n        messageManager.setMessageStatusSigned(messageId, signature);\n      }\n\n      return signature;\n    } catch (error: any) {\n      console.info(`MetaMaskController - ${methodName} failed.`, error);\n      throw error;\n    }\n  }\n\n  #cancelAbstractMessage<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    messageId: string,\n    reason?: string,\n  ) {\n    if (reason) {\n      const message = this.#getMessage(messageId);\n      this.hub.emit('cancelWithReason', { message, reason });\n    }\n    messageManager.rejectMessage(messageId);\n  }\n\n  #handleMessageManagerEvents<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(messageManager: AbstractMessageManager<M, P, PM>, eventName: string) {\n    messageManager.hub.on('updateBadge', () => {\n      this.hub.emit('updateBadge');\n    });\n\n    messageManager.hub.on(\n      'unapprovedMessage',\n      (msgParams: AbstractMessageParamsMetamask) => {\n        this.hub.emit(eventName, msgParams);\n      },\n    );\n  }\n\n  #subscribeToMessageState<\n    M extends AbstractMessage,\n    P extends AbstractMessageParams,\n    PM extends AbstractMessageParamsMetamask,\n  >(\n    messageManager: AbstractMessageManager<M, P, PM>,\n    updateState: (\n      state: SignatureControllerState,\n      newMessages: Record<string, StateMessage>,\n      messageCount: number,\n    ) => void,\n  ) {\n    messageManager.subscribe((state: MessageManagerState<AbstractMessage>) => {\n      const newMessages = this.#migrateMessages(\n        state.unapprovedMessages as any,\n      );\n\n      this.update(() => {\n        const newState = { ...this.state };\n        updateState(newState, newMessages, state.unapprovedMessagesCount);\n        return newState;\n      });\n    });\n  }\n\n  #migrateMessages(\n    coreMessages: Record<string, CoreMessage>,\n  ): Record<string, StateMessage> {\n    const stateMessages: Record<string, StateMessage> = {};\n\n    for (const messageId of Object.keys(coreMessages)) {\n      const coreMessage = coreMessages[messageId];\n      const stateMessage = this.#migrateMessage(coreMessage);\n\n      stateMessages[messageId] = stateMessage;\n    }\n\n    return stateMessages;\n  }\n\n  #migrateMessage(coreMessage: CoreMessage): StateMessage {\n    const { messageParams, ...coreMessageData } = coreMessage;\n\n    // Core message managers use messageParams but frontend uses msgParams with lots of references\n    const stateMessage = {\n      ...coreMessageData,\n      msgParams: messageParams,\n    };\n\n    return stateMessage as StateMessage;\n  }\n\n  #normalizeMsgData(data: string) {\n    if (data.slice(0, 2) === '0x') {\n      // data is already hex\n      return data;\n    }\n    // data is unicode, convert to hex\n    return bufferToHex(Buffer.from(data, 'utf8'));\n  }\n\n  #getMessage(messageId: string): StateMessage {\n    return {\n      ...this.state.unapprovedMsgs,\n      ...this.state.unapprovedPersonalMsgs,\n      ...this.state.unapprovedTypedMessages,\n    }[messageId];\n  }\n\n  async #requestApproval(\n    msgParams: AbstractMessageParamsMetamask,\n    type: ApprovalType,\n  ) {\n    const id = msgParams.metamaskId as string;\n    const origin = msgParams.origin || ORIGIN_METAMASK;\n\n    return this.messagingSystem.call(\n      'ApprovalController:addRequest',\n      {\n        id,\n        origin,\n        type,\n        requestData: msgParams as Required<AbstractMessageParamsMetamask>,\n      },\n      true,\n    );\n  }\n\n  #removeJsonData(\n    messageParams: TypedMessageParams,\n    version: string,\n  ): TypedMessageParams {\n    if (version === 'V1' || typeof messageParams.data !== 'string') {\n      return messageParams;\n    }\n\n    return {\n      ...messageParams,\n      data: JSON.parse(messageParams.data),\n    };\n  }\n}\n"]}
 \ No newline at end of file
