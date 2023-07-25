@@ -98,7 +98,7 @@ export default function RecoveryPhrase({ secretRecoveryPhrase }) {
         phraseRevealed={phraseRevealed && !hiddenPhrase}
         hiddenPhrase={hiddenPhrase}
       />
-      <div className="recovery-phrase__footer">
+      {/* <div className="recovery-phrase__footer">
         {phraseRevealed ? (
           <div className="recovery-phrase__footer__copy-and-hide">
             <div className="recovery-phrase__footer__copy-and-hide__area">
@@ -168,7 +168,7 @@ export default function RecoveryPhrase({ secretRecoveryPhrase }) {
             {t('revealSeedWords')}
           </Button>
         )}
-      </div>
+      </div> */}
     </div>
   );
 }

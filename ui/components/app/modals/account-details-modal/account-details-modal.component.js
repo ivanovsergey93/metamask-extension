@@ -65,7 +65,7 @@ export default class AccountDetailsModal extends Component {
       return kr.accounts.includes(address);
     });
 
-    let exportPrivateKeyFeatureEnabled = true;
+    let exportPrivateKeyFeatureEnabled = false;
     // This feature is disabled for hardware wallets
     if (isHardwareKeyring(keyring?.type)) {
       exportPrivateKeyFeatureEnabled = false;
