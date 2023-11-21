@@ -22,8 +22,8 @@ import SnapAuthorshipHeader from '../../../../components/app/snaps/snap-authorsh
 import {
   AvatarIcon,
   IconName,
-  Text,
   ValidTag,
+  Text,
 } from '../../../../components/component-library';
 import { getSnapName } from '../../../../helpers/utils/util';
 import SnapPermissionsList from '../../../../components/app/snaps/snap-permissions-list';
@@ -120,7 +120,7 @@ export default function SnapInstall({
         <SnapAuthorshipHeader snapId={targetSubjectMetadata.origin} />
       )}
       <Box
-        ref={ref}
+        ref={!isLoading && !hasError ? ref : undefined}
         onScroll={onScroll}
         className="snap-install__content"
         style={{
@@ -158,7 +158,7 @@ export default function SnapInstall({
               paddingBottom={2}
               textAlign="center"
             >
-              {t('snapInstall')}
+              {t('installRequest')}
             </Text>
             <Text
               className="snap-install__content__permission-description"
@@ -179,6 +179,7 @@ export default function SnapInstall({
               ])}
             </Text>
             <SnapPermissionsList
+              snapId={targetSubjectMetadata.origin}
               permissions={requestState.permissions || {}}
               targetSubjectMetadata={targetSubjectMetadata}
             />

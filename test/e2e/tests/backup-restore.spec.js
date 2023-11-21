@@ -56,11 +56,15 @@ describe('Backup and Restore', function () {
     ],
   };
   it('should backup the account settings', async function () {
+    if (process.env.SELENIUM_BROWSER === 'chrome') {
+      // Chrome shows OS level download prompt which can't be dismissed by Selenium
+      this.skip();
+    }
     await withFixtures(
       {
         fixtures: new FixtureBuilder().build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
         failOnConsoleError: false,
       },
       async ({ driver }) => {
@@ -76,7 +80,7 @@ describe('Backup and Restore', function () {
         await driver.clickElement({ text: 'Settings', tag: 'div' });
         await driver.clickElement({ text: 'Advanced', tag: 'div' });
         await driver.clickElement({
-          text: 'Backup',
+          text: 'Back up',
           tag: 'button',
         });
 
@@ -97,11 +101,15 @@ describe('Backup and Restore', function () {
   });
 
   it('should restore the account settings', async function () {
+    if (process.env.SELENIUM_BROWSER === 'chrome') {
+      // Chrome shows OS level download prompt which can't be dismissed by Selenium
+      this.skip();
+    }
     await withFixtures(
       {
         fixtures: new FixtureBuilder().build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
       },
       async ({ driver }) => {
         await driver.navigate();
@@ -119,7 +127,7 @@ describe('Backup and Restore', function () {
 
         // Dismiss success message
         await driver.waitForSelector({
-          css: '.actionable-message__message',
+          css: '[data-testid="restore-user-data-banner-alert-description"]',
           text: 'Your data has been restored successfully',
         });
         await driver.clickElement({ text: 'Dismiss', tag: 'button' });

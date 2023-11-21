@@ -1,54 +1,61 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 
 import { useSelector } from 'react-redux';
+import { toChecksumHexAddress } from '@metamask/controller-utils';
 import { useI18nContext } from '../../../hooks/useI18nContext';
-import { getRpcPrefsForCurrentProvider } from '../../../selectors';
-import { getURLHostName, shortenAddress } from '../../../helpers/utils/util';
+import { shortenAddress } from '../../../helpers/utils/util';
 
-import { AccountListItemMenu } from '..';
+import { AccountListItemMenu, AvatarGroup } from '..';
 import {
   AvatarAccount,
-  Box,
-  Text,
+  AvatarAccountVariant,
   AvatarFavicon,
-  Tag,
-  ButtonLink,
+  AvatarToken,
+  AvatarTokenSize,
+  Box,
   ButtonIcon,
   IconName,
   IconSize,
-  AvatarAccountVariant,
+  Tag,
+  Text,
 } from '../../component-library';
 import {
-  Color,
-  TextAlign,
   AlignItems,
-  TextVariant,
-  FlexDirection,
+  BackgroundColor,
+  BlockSize,
+  BorderColor,
   BorderRadius,
+  Color,
+  Display,
+  FlexDirection,
   JustifyContent,
   Size,
-  BorderColor,
-  Display,
+  TextAlign,
+  TextVariant,
 } from '../../../helpers/constants/design-system';
 import { HardwareKeyringNames } from '../../../../shared/constants/hardware-wallets';
 import { KeyringType } from '../../../../shared/constants/keyring';
 import UserPreferencedCurrencyDisplay from '../../app/user-preferenced-currency-display/user-preferenced-currency-display.component';
-import { SECONDARY, PRIMARY } from '../../../helpers/constants/common';
-import { findKeyringForAddress } from '../../../ducks/metamask/metamask';
+import { PRIMARY, SECONDARY } from '../../../helpers/constants/common';
+import {
+  findKeyringForAddress,
+  getNativeCurrency,
+} from '../../../ducks/metamask/metamask';
 import Tooltip from '../../ui/tooltip/tooltip';
 import {
   MetaMetricsEventCategory,
   MetaMetricsEventName,
 } from '../../../../shared/constants/metametrics';
 import { MetaMetricsContext } from '../../../contexts/metametrics';
+import { getNativeCurrencyImage, getUseBlockie } from '../../../selectors';
+import { useAccountTotalFiatBalance } from '../../../hooks/useAccountTotalFiatBalance';
 
 const MAXIMUM_CURRENCY_DECIMALS = 3;
 const MAXIMUM_CHARACTERS_WITHOUT_TOOLTIP = 17;
 
-function getLabel(keyring = {}, t) {
-  const { type } = keyring;
+function getLabel(t, { type }) {
   switch (type) {
     case KeyringType.qr:
       return HardwareKeyringNames.qr;
@@ -60,6 +67,10 @@ function getLabel(keyring = {}, t) {
       return HardwareKeyringNames.ledger;
     case KeyringType.lattice:
       return HardwareKeyringNames.lattice;
+    ///: BEGIN:ONLY_INCLUDE_IN(keyring-snaps)
+    case KeyringType.snap:
+      return `${t('snaps')} (${t('beta')})`;
+    ///: END:ONLY_INCLUDE_IN
     default:
       return null;
   }
@@ -72,27 +83,42 @@ export const AccountListItem = ({
   closeMenu,
   connectedAvatar,
   connectedAvatarName,
+  showOptions = false,
 }) => {
   const t = useI18nContext();
   const [accountOptionsMenuOpen, setAccountOptionsMenuOpen] = useState(false);
   const [accountListItemMenuElement, setAccountListItemMenuElement] =
     useState();
-  const useBlockie = useSelector((state) => state.metamask.useBlockie);
+  const useBlockie = useSelector(getUseBlockie);
 
   const setAccountListItemMenuRef = (ref) => {
     setAccountListItemMenuElement(ref);
   };
 
+  const { totalWeiBalance, orderedTokenList } = useAccountTotalFiatBalance(
+    identity.address,
+  );
+  const balanceToTranslate = process.env.MULTICHAIN
+    ? totalWeiBalance
+    : identity.balance;
+
+  // If this is the selected item in the Account menu,
+  // scroll the item into view
+  const itemRef = useRef(null);
+  useEffect(() => {
+    if (selected) {
+      itemRef.current?.scrollIntoView?.();
+    }
+  }, [itemRef, selected]);
+
   const keyring = useSelector((state) =>
     findKeyringForAddress(state, identity.address),
   );
-  const label = getLabel(keyring, t);
-
-  const rpcPrefs = useSelector(getRpcPrefsForCurrentProvider);
-  const { blockExplorerUrl } = rpcPrefs;
-  const blockExplorerUrlSubTitle = getURLHostName(blockExplorerUrl);
+  const label = getLabel(t, keyring);
 
   const trackEvent = useContext(MetaMetricsContext);
+  const primaryTokenImage = useSelector(getNativeCurrencyImage);
+  const nativeCurrency = useSelector(getNativeCurrency);
 
   return (
     <Box
@@ -103,6 +129,7 @@ export const AccountListItem = ({
         'multichain-account-list-item--selected': selected,
         'multichain-account-list-item--connected': Boolean(connectedAvatar),
       })}
+      ref={itemRef}
       onClick={() => {
         // Without this check, the account will be selected after
         // the account options menu closes
@@ -139,19 +166,22 @@ export const AccountListItem = ({
             display={Display.Flex}
             justifyContent={JustifyContent.spaceBetween}
           >
-            <Text
-              ellipsis
-              as="div"
+            <Box
               className="multichain-account-list-item__account-name"
               marginInlineEnd={2}
             >
-              <ButtonLink
+              <Text
+                as="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onClick();
                 }}
+                variant={TextVariant.bodyMdMedium}
                 className="multichain-account-list-item__account-name__button"
-                color={Color.textDefault}
+                padding={0}
+                backgroundColor={BackgroundColor.transparent}
+                width={BlockSize.Full}
+                textAlign={TextAlign.Left}
                 ellipsis
               >
                 {identity.name.length > MAXIMUM_CHARACTERS_WITHOUT_TOOLTIP ? (
@@ -165,21 +195,22 @@ export const AccountListItem = ({
                 ) : (
                   identity.name
                 )}
-              </ButtonLink>
-            </Text>
+              </Text>
+            </Box>
             <Text
               as="div"
               className="multichain-account-list-item__asset"
               display={Display.Flex}
               flexDirection={FlexDirection.Row}
               alignItems={AlignItems.center}
+              justifyContent={JustifyContent.flexEnd}
               ellipsis
               textAlign={TextAlign.End}
             >
               <UserPreferencedCurrencyDisplay
                 ethNumberOfDecimals={MAXIMUM_CURRENCY_DECIMALS}
-                value={identity.balance}
-                type={SECONDARY}
+                value={balanceToTranslate}
+                type={PRIMARY}
               />
             </Text>
           </Box>
@@ -198,21 +229,55 @@ export const AccountListItem = ({
               />
             ) : null}
             <Text variant={TextVariant.bodySm} color={Color.textAlternative}>
-              {shortenAddress(identity.address)}
+              {shortenAddress(toChecksumHexAddress(identity.address))}
             </Text>
           </Box>
-          <Text
-            variant={TextVariant.bodySm}
-            color={Color.textAlternative}
-            textAlign={TextAlign.End}
-            as="div"
-          >
-            <UserPreferencedCurrencyDisplay
-              ethNumberOfDecimals={MAXIMUM_CURRENCY_DECIMALS}
-              value={identity.balance}
-              type={PRIMARY}
-            />
-          </Text>
+          {process.env.MULTICHAIN ? (
+            <>
+              {orderedTokenList.length > 1 ? (
+                <AvatarGroup members={orderedTokenList} limit={4} />
+              ) : (
+                <Box
+                  display={Display.Flex}
+                  alignItems={AlignItems.center}
+                  justifyContent={JustifyContent.center}
+                  gap={1}
+                >
+                  <AvatarToken
+                    src={primaryTokenImage}
+                    name={nativeCurrency}
+                    size={AvatarTokenSize.Xs}
+                    borderColor={BorderColor.borderDefault}
+                  />
+                  <Text
+                    variant={TextVariant.bodySm}
+                    color={Color.textAlternative}
+                    textAlign={TextAlign.End}
+                    as="div"
+                  >
+                    <UserPreferencedCurrencyDisplay
+                      ethNumberOfDecimals={MAXIMUM_CURRENCY_DECIMALS}
+                      value={balanceToTranslate}
+                      type={SECONDARY}
+                    />
+                  </Text>
+                </Box>
+              )}
+            </>
+          ) : (
+            <Text
+              variant={TextVariant.bodySm}
+              color={Color.textAlternative}
+              textAlign={TextAlign.End}
+              as="div"
+            >
+              <UserPreferencedCurrencyDisplay
+                ethNumberOfDecimals={MAXIMUM_CURRENCY_DECIMALS}
+                value={balanceToTranslate}
+                type={SECONDARY}
+              />
+            </Text>
+          )}
         </Box>
         {label ? (
           <Tag
@@ -224,35 +289,38 @@ export const AccountListItem = ({
           />
         ) : null}
       </Box>
-      <ButtonIcon
-        ariaLabel={`${identity.name} ${t('options')}`}
-        iconName={IconName.MoreVertical}
-        size={IconSize.Sm}
-        ref={setAccountListItemMenuRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (!accountOptionsMenuOpen) {
-            trackEvent({
-              event: MetaMetricsEventName.AccountDetailMenuOpened,
-              category: MetaMetricsEventCategory.Navigation,
-              properties: {
-                location: 'Account Options',
-              },
-            });
-          }
-          setAccountOptionsMenuOpen(!accountOptionsMenuOpen);
-        }}
-        data-testid="account-list-item-menu-button"
-      />
-      <AccountListItemMenu
-        anchorElement={accountListItemMenuElement}
-        blockExplorerUrlSubTitle={blockExplorerUrlSubTitle}
-        identity={identity}
-        onClose={() => setAccountOptionsMenuOpen(false)}
-        isOpen={accountOptionsMenuOpen}
-        isRemovable={keyring?.type !== KeyringType.hdKeyTree}
-        closeMenu={closeMenu}
-      />
+      {showOptions ? (
+        <ButtonIcon
+          ariaLabel={`${identity.name} ${t('options')}`}
+          iconName={IconName.MoreVertical}
+          size={IconSize.Sm}
+          ref={setAccountListItemMenuRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!accountOptionsMenuOpen) {
+              trackEvent({
+                event: MetaMetricsEventName.AccountDetailMenuOpened,
+                category: MetaMetricsEventCategory.Navigation,
+                properties: {
+                  location: 'Account Options',
+                },
+              });
+            }
+            setAccountOptionsMenuOpen(!accountOptionsMenuOpen);
+          }}
+          data-testid="account-list-item-menu-button"
+        />
+      ) : null}
+      {showOptions ? (
+        <AccountListItemMenu
+          anchorElement={accountListItemMenuElement}
+          identity={identity}
+          onClose={() => setAccountOptionsMenuOpen(false)}
+          isOpen={accountOptionsMenuOpen}
+          isRemovable={keyring?.type !== KeyringType.hdKeyTree}
+          closeMenu={closeMenu}
+        />
+      ) : null}
     </Box>
   );
 };
@@ -286,6 +354,10 @@ AccountListItem.propTypes = {
    * Text used as the avatar alt text
    */
   connectedAvatarName: PropTypes.string,
+  /**
+   * Represents if the "Options" 3-dot menu should display
+   */
+  showOptions: PropTypes.bool,
 };
 
 AccountListItem.displayName = 'AccountListItem';

@@ -1,10 +1,6 @@
 import EventEmitter from 'events';
 import log from 'loglevel';
 import { captureException } from '@sentry/browser';
-import {
-  PersonalMessageManager,
-  TypedMessageManager,
-} from '@metamask/message-manager';
 import { CUSTODIAN_TYPES } from '@metamask-institutional/custody-keyring';
 import {
   updateCustodianTransactions,
@@ -14,11 +10,10 @@ import {
   REFRESH_TOKEN_CHANGE_EVENT,
   INTERACTIVE_REPLACEMENT_TOKEN_CHANGE_EVENT,
 } from '@metamask-institutional/sdk';
+import { handleMmiPortfolio } from '@metamask-institutional/portfolio-dashboard';
 import { toChecksumHexAddress } from '../../../shared/modules/hexstring-utils';
-import {
-  BUILD_QUOTE_ROUTE,
-  CONNECT_HARDWARE_ROUTE,
-} from '../../../ui/helpers/constants/routes';
+import { CHAIN_IDS } from '../../../shared/constants/network';
+import { CONNECT_HARDWARE_ROUTE } from '../../../ui/helpers/constants/routes';
 import { getPermissionBackgroundApiMethods } from './permissions';
 
 export default class MMIController extends EventEmitter {
@@ -28,7 +23,6 @@ export default class MMIController extends EventEmitter {
     this.opts = opts;
     this.mmiConfigurationController = opts.mmiConfigurationController;
     this.keyringController = opts.keyringController;
-    this.txController = opts.txController;
     this.securityProviderRequest = opts.securityProviderRequest;
     this.preferencesController = opts.preferencesController;
     this.appStateController = opts.appStateController;
@@ -41,19 +35,19 @@ export default class MMIController extends EventEmitter {
     this.metaMetricsController = opts.metaMetricsController;
     this.networkController = opts.networkController;
     this.permissionController = opts.permissionController;
+    this.signatureController = opts.signatureController;
     this.platform = opts.platform;
     this.extension = opts.extension;
 
-    this.personalMessageManager = new PersonalMessageManager(
-      undefined,
-      undefined,
-      this.securityProviderRequest,
-    );
-    this.typedMessageManager = new TypedMessageManager(
-      undefined,
-      undefined,
-      this.securityProviderRequest,
-    );
+    this.updateTransactionHash = opts.updateTransactionHash;
+    this.trackTransactionEvents = opts.trackTransactionEvents;
+    this.txStateManager = {
+      getTransactions: opts.getTransactions,
+      setTxStatusSigned: opts.setTxStatusSigned,
+      setTxStatusSubmitted: opts.setTxStatusSubmitted,
+      setTxStatusFailed: opts.setTxStatusFailed,
+      updateTransaction: opts.updateTransaction,
+    };
 
     // Prepare event listener after transactionUpdateController gets initiated
     this.transactionUpdateController.prepareEventListener(
@@ -69,6 +63,20 @@ export default class MMIController extends EventEmitter {
         this.transactionUpdateController.subscribeToEvents();
       });
     }
+
+    this.signatureController.hub.on(
+      'personal_sign:signed',
+      async ({ signature, messageId }) => {
+        await this.handleSigningEvents(signature, messageId, 'personal');
+      },
+    );
+
+    this.signatureController.hub.on(
+      'eth_signTypedData:signed',
+      async ({ signature, messageId }) => {
+        await this.handleSigningEvents(signature, messageId, 'v4');
+      },
+    );
   } // End of constructor
 
   async persistKeyringsAfterRefreshTokenChange() {
@@ -76,7 +84,13 @@ export default class MMIController extends EventEmitter {
   }
 
   async trackTransactionEventFromCustodianEvent(txMeta, event) {
-    this.txController._trackTransactionMetricsEvent(txMeta, event);
+    // transactionMetricsRequest parameter is already bound in the constructor
+    this.trackTransactionEvents(
+      {
+        transactionMeta: txMeta,
+      },
+      event,
+    );
   }
 
   async addKeyringIfNotExists(type) {
@@ -92,10 +106,9 @@ export default class MMIController extends EventEmitter {
       log,
       getState: () => this.getState(),
       getPendingNonce: (address) => this.getPendingNonce(address),
-      setTxHash: (txId, txHash) => this.txController.setTxHash(txId, txHash),
-      typedMessageManager: this.typedMessageManager,
-      personalMessageManager: this.personalMessageManager,
-      txStateManager: this.txController.txStateManager,
+      setTxHash: (txId, txHash) => this.updateTransactionHash(txId, txHash),
+      signatureController: this.signatureController,
+      txStateManager: this.txStateManager,
       custodyController: this.custodyController,
       trackTransactionEvent:
         this.trackTransactionEventFromCustodianEvent.bind(this),
@@ -156,20 +169,17 @@ export default class MMIController extends EventEmitter {
           }
         }
 
-        const txList = this.txController.txStateManager.getTransactions(
-          {},
-          [],
-          false,
-        ); // Includes all transactions, but we are looping through keyrings. Currently filtering is done in updateCustodianTransactions :-/
+        const txList = this.txStateManager.getTransactions({}, [], false); // Includes all transactions, but we are looping through keyrings. Currently filtering is done in updateCustodianTransactions :-/
 
         try {
           updateCustodianTransactions({
             keyring,
             type,
             txList,
-            getPendingNonce: this.getPendingNonce.bind(this),
-            txStateManager: this.txController.txStateManager,
-            setTxHash: this.txController.setTxHash.bind(this.txController),
+            getPendingNonce: (address) => this.getPendingNonce(address),
+            setTxHash: (txId, txHash) =>
+              this.updateTransactionHash(txId, txHash),
+            txStateManager: this.txStateManager,
             custodyController: this.custodyController,
             transactionUpdateController: this.transactionUpdateController,
           });
@@ -206,15 +216,6 @@ export default class MMIController extends EventEmitter {
       mmiConfigData.mmiConfiguration.features?.websocketApi
     ) {
       this.transactionUpdateController.getCustomerProofForAddresses(addresses);
-    }
-
-    try {
-      if (this.institutionalFeaturesController.getComplianceProjectId()) {
-        this.institutionalFeaturesController.startPolling();
-      }
-    } catch (e) {
-      log.error('Failed to start Compliance polling');
-      log.error(e);
     }
   }
 
@@ -283,9 +284,9 @@ export default class MMIController extends EventEmitter {
       })),
     );
 
-    newAccounts.forEach(
-      async () => await this.keyringController.addNewAccount(keyring),
-    );
+    for (let i = 0; i < newAccounts.length; i++) {
+      await this.keyringController.addNewAccountForKeyring(keyring);
+    }
 
     const allAccounts = await this.keyringController.getAccounts();
 
@@ -294,12 +295,33 @@ export default class MMIController extends EventEmitter {
       ...new Set(oldAccounts.concat(allAccounts.map((a) => a.toLowerCase()))),
     ];
 
+    // Create a Set of lowercased addresses from oldAccounts for efficient existence checks
+    const oldAccountsSet = new Set(
+      oldAccounts.map((address) => address.toLowerCase()),
+    );
+
+    // Create a map of lowercased addresses to names from newAccounts for efficient lookups
+    const accountNameMap = newAccounts.reduce((acc, item) => {
+      // For each account in newAccounts, add an entry to the map with the lowercased address as the key and the name as the value
+      acc[item.toLowerCase()] = accounts[item].name;
+      return acc;
+    }, {});
+
+    // Iterate over all accounts
     allAccounts.forEach((address) => {
-      if (!oldAccounts.includes(address.toLowerCase())) {
-        const label = newAccounts
-          .filter((item) => item.toLowerCase() === address)
-          .map((item) => accounts[item].name)[0];
-        this.preferencesController.setAccountLabel(address, label);
+      // Convert the address to lowercase for consistent comparisons
+      const lowercasedAddress = address.toLowerCase();
+
+      // If the address is not in oldAccounts
+      if (!oldAccountsSet.has(lowercasedAddress)) {
+        // Look up the label in the map
+        const label = accountNameMap[lowercasedAddress];
+
+        // If the label is defined
+        if (label) {
+          // Set the label for the address
+          this.preferencesController.setAccountLabel(address, label);
+        }
       }
     });
 
@@ -315,7 +337,7 @@ export default class MMIController extends EventEmitter {
 
     // FIXME: status maps are not a thing anymore
     this.custodyController.storeCustodyStatusMap(
-      custodian.name,
+      custodian.envName,
       keyring.getStatusMap(),
     );
 
@@ -400,7 +422,9 @@ export default class MMIController extends EventEmitter {
   }
 
   async getCustodianConfirmDeepLink(txId) {
-    const txMeta = this.txController.txStateManager.getTransaction(txId);
+    const txMeta = this.txStateManager
+      .getTransactions()
+      .find((tx) => tx.id === txId);
 
     const address = txMeta.txParams.from;
     const custodyType = this.custodyController.getCustodyTypeByAddress(
@@ -424,32 +448,15 @@ export default class MMIController extends EventEmitter {
     return keyring.getTransactionDeepLink(from, custodyTxId);
   }
 
-  async getCustodianToken(custodianType) {
-    let currentCustodyType;
-
-    const address = this.preferencesController.getSelectedAddress();
-
-    if (!custodianType) {
-      const resultCustody = this.custodyController.getCustodyTypeByAddress(
-        toChecksumHexAddress(address),
-      );
-      currentCustodyType = resultCustody;
-    }
-    let keyring = await this.keyringController.getKeyringsByType(
-      currentCustodyType || `Custody - ${custodianType}`,
-    )[0];
-    if (!keyring) {
-      keyring = await this.keyringController.addNewKeyring(
-        currentCustodyType || `Custody - ${custodianType}`,
-      );
-    }
+  async getCustodianToken(address) {
+    const keyring = await this.keyringController.getKeyringForAccount(address);
     const { authDetails } = keyring.getAccountDetails(address);
     return keyring ? authDetails.jwt || authDetails.refreshToken : '';
   }
 
   // Based on a custodian name, get all the tokens associated with that custodian
-  async getCustodianJWTList(custodianName) {
-    console.log('getCustodianJWTList', custodianName);
+  async getCustodianJWTList(custodianEnvName) {
+    console.log('getCustodianJWTList', custodianEnvName);
 
     const { identities } = this.preferencesController.store.getState();
 
@@ -461,7 +468,9 @@ export default class MMIController extends EventEmitter {
 
     const { custodians } = mmiConfiguration;
 
-    const custodian = custodians.find((item) => item.name === custodianName);
+    const custodian = custodians.find(
+      (item) => item.envName === custodianEnvName,
+    );
 
     if (!custodian) {
       return [];
@@ -486,9 +495,11 @@ export default class MMIController extends EventEmitter {
 
         if (
           !custodyAccountDetails ||
-          custodyAccountDetails.custodianName !== custodianName
+          custodyAccountDetails.custodianName !== custodianEnvName
         ) {
-          log.debug(`${address} does not belong to ${custodianName} keyring`);
+          log.debug(
+            `${address} does not belong to ${custodianEnvName} keyring`,
+          );
           continue;
         }
 
@@ -542,39 +553,107 @@ export default class MMIController extends EventEmitter {
     });
   }
 
+  async handleMmiDashboardData() {
+    await this.appStateController.getUnlockPromise(true);
+    const keyringAccounts = await this.keyringController.getAccounts();
+    const { identities } = this.preferencesController.store.getState();
+    const { metaMetricsId } = this.metaMetricsController.store.getState();
+    const getAccountDetails = (address) =>
+      this.custodyController.getAccountDetails(address);
+    const extensionId = this.extension.runtime.id;
+
+    const { networkConfigurations: networkConfigurationsById } =
+      this.networkController.state;
+    const networkConfigurations = Object.values(networkConfigurationsById);
+
+    const networks = [
+      ...networkConfigurations,
+      { chainId: CHAIN_IDS.MAINNET },
+      { chainId: CHAIN_IDS.GOERLI },
+    ];
+
+    return handleMmiPortfolio({
+      keyringAccounts,
+      identities,
+      metaMetricsId,
+      networks,
+      getAccountDetails,
+      extensionId,
+    });
+  }
+
+  async newUnsignedMessage(msgParams, req, version) {
+    // The code path triggered by deferSetAsSigned: true is for custodial accounts
+    const accountDetails = this.custodyController.getAccountDetails(
+      msgParams.from,
+    );
+    const isCustodial = Boolean(accountDetails);
+    const updatedMsgParams = { ...msgParams, deferSetAsSigned: isCustodial };
+
+    if (req.method.includes('eth_signTypedData')) {
+      return await this.signatureController.newUnsignedTypedMessage(
+        updatedMsgParams,
+        req,
+        version,
+      );
+    } else if (req.method.includes('personal_sign')) {
+      return await this.signatureController.newUnsignedPersonalMessage(
+        updatedMsgParams,
+        req,
+      );
+    }
+    return await this.signatureController.newUnsignedMessage(
+      updatedMsgParams,
+      req,
+    );
+  }
+
+  async handleSigningEvents(signature, messageId, signOperation) {
+    if (signature.custodian_transactionId) {
+      this.transactionUpdateController.addTransactionToWatchList(
+        signature.custodian_transactionId,
+        signature.from,
+        signOperation,
+        true,
+      );
+    }
+
+    this.signatureController.setMessageMetadata(messageId, signature);
+
+    return this.getState();
+  }
+
   async setAccountAndNetwork(origin, address, chainId) {
     await this.appStateController.getUnlockPromise(true);
+    const addressToLowerCase = address.toLowerCase();
     const selectedAddress = this.preferencesController.getSelectedAddress();
-    if (selectedAddress.toLowerCase() !== address.toLowerCase()) {
-      this.preferencesController.setSelectedAddress(address);
+    if (selectedAddress.toLowerCase() !== addressToLowerCase) {
+      this.preferencesController.setSelectedAddress(addressToLowerCase);
     }
     const selectedChainId = parseInt(
-      this.networkController.getCurrentChainId(),
+      this.networkController.state.providerConfig.chainId,
       16,
     );
     if (selectedChainId !== chainId && chainId === 1) {
-      this.networkController.setProviderType('mainnet');
+      await this.networkController.setProviderType('mainnet');
     } else if (selectedChainId !== chainId) {
-      const network = this.preferencesController
-        .getFrequentRpcListDetail()
-        .find((item) => parseInt(item.chainId, 16) === chainId);
-      this.networkController.setRpcTarget(
-        network.rpcUrl,
-        network.chainId,
-        network.ticker,
-        network.nickname,
-      );
+      const foundNetworkConfiguration = Object.values(
+        this.networkController.state.networkConfigurations,
+      ).find((networkConfiguration) => {
+        return parseInt(networkConfiguration.chainId, 16) === chainId;
+      });
+
+      if (foundNetworkConfiguration !== undefined) {
+        await this.networkConfiguration.setActiveNetwork(
+          foundNetworkConfiguration.id,
+        );
+      }
     }
+
     getPermissionBackgroundApiMethods(
       this.permissionController,
-    ).addPermittedAccount(origin, address);
+    ).addPermittedAccount(origin, addressToLowerCase);
 
-    return true;
-  }
-
-  async handleMmiOpenSwaps(origin, address, chainId) {
-    await this.setAccountAndNetwork(origin, address, chainId);
-    this.platform.openExtensionInBrowser(BUILD_QUOTE_ROUTE);
     return true;
   }
 

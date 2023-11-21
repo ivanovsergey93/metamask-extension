@@ -4,6 +4,8 @@ import { withRouter } from 'react-router-dom';
 ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
 import { showCustodianDeepLink } from '@metamask-institutional/extension';
 import { mmiActionsFactory } from '../../store/institutional/institution-background';
+import { CHAIN_ID_TO_RPC_URL_MAP } from '../../../shared/constants/network';
+
 ///: END:ONLY_INCLUDE_IN
 import { clearConfirmTransaction } from '../../ducks/confirm-transaction/confirm-transaction.duck';
 
@@ -41,6 +43,7 @@ import {
   getUnapprovedTransaction,
   getFullTxData,
   getUseCurrencyRateCheck,
+  getUnapprovedTransactions,
 } from '../../selectors';
 import { getMostRecentOverviewPage } from '../../ducks/history/history';
 import {
@@ -50,6 +53,8 @@ import {
   getNativeCurrency,
   getSendToAccounts,
   getProviderConfig,
+  findKeyringForAddress,
+  getConversionRate,
 } from '../../ducks/metamask/metamask';
 import {
   addHexPrefix,
@@ -60,7 +65,6 @@ import {
 
 import {
   parseStandardTokenTransactionData,
-  transactionMatchesNetwork,
   txParamsAreDappSuggested,
 } from '../../../shared/modules/transaction.utils';
 import {
@@ -75,7 +79,11 @@ import { CUSTOM_GAS_ESTIMATE } from '../../../shared/constants/gas';
 ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
 import { getAccountType } from '../../selectors/selectors';
 import { ENVIRONMENT_TYPE_NOTIFICATION } from '../../../shared/constants/app';
-import { getIsNoteToTraderSupported } from '../../selectors/institutional/selectors';
+import {
+  getIsNoteToTraderSupported,
+  getIsCustodianPublishesTransactionSupported,
+} from '../../selectors/institutional/selectors';
+import { showCustodyConfirmLink } from '../../store/institutional/institution-actions';
 ///: END:ONLY_INCLUDE_IN
 import {
   TransactionStatus,
@@ -120,18 +128,13 @@ const mapStateToProps = (state, ownProps) => {
   const gasLoadingAnimationIsShowing = getGasLoadingAnimationIsShowing(state);
   const isBuyableChain = getIsBuyableChain(state);
   const { confirmTransaction, metamask } = state;
-  const {
-    conversionRate,
-    identities,
-    addressBook,
-    networkId,
-    unapprovedTxs,
-    nextNonce,
-  } = metamask;
+  const conversionRate = getConversionRate(state);
+  const { identities, addressBook, nextNonce } = metamask;
+  const unapprovedTxs = getUnapprovedTransactions(state);
   const { chainId } = getProviderConfig(state);
   const { tokenData, txData, tokenProps, nonce } = confirmTransaction;
   const { txParams = {}, id: transactionId, type } = txData;
-  const txId = transactionId || Number(paramsTransactionId);
+  const txId = transactionId || paramsTransactionId;
   const transaction = getUnapprovedTransaction(state, txId);
   const {
     from: fromAddress,
@@ -148,6 +151,7 @@ const mapStateToProps = (state, ownProps) => {
 
   const { balance } = accounts[fromAddress];
   const { name: fromName } = identities[fromAddress];
+  const keyring = findKeyringForAddress(state, fromAddress);
 
   const isSendingAmount =
     type === TransactionType.simpleSend || !isEmptyHexString(amount);
@@ -184,9 +188,7 @@ const mapStateToProps = (state, ownProps) => {
   } = transactionFeeSelector(state, transaction);
 
   const currentNetworkUnapprovedTxs = Object.keys(unapprovedTxs)
-    .filter((key) =>
-      transactionMatchesNetwork(unapprovedTxs[key], chainId, networkId),
-    )
+    .filter((key) => unapprovedTxs[key].chainId === chainId)
     .reduce((acc, key) => ({ ...acc, [key]: unapprovedTxs[key] }), {});
   const unapprovedTxCount = valuesFor(currentNetworkUnapprovedTxs).length;
 
@@ -222,6 +224,13 @@ const mapStateToProps = (state, ownProps) => {
     state,
     fromChecksumHexAddress,
   );
+  const custodianPublishesTransaction =
+    getIsCustodianPublishesTransactionSupported(state, fromChecksumHexAddress);
+  const builtinRpcUrl = CHAIN_ID_TO_RPC_URL_MAP[chainId];
+  const { rpcUrl: customRpcUrl } = getProviderConfig(state);
+
+  const rpcUrl = customRpcUrl || builtinRpcUrl;
+
   ///: END:ONLY_INCLUDE_IN
 
   const hardwareWalletRequiresConnection =
@@ -279,10 +288,13 @@ const mapStateToProps = (state, ownProps) => {
     chainId,
     isBuyableChain,
     useCurrencyRateCheck: getUseCurrencyRateCheck(state),
+    keyringForAccount: keyring,
     ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
     accountType,
     isNoteToTraderSupported,
     isNotification,
+    custodianPublishesTransaction,
+    rpcUrl,
     ///: END:ONLY_INCLUDE_IN
   };
 };
@@ -313,8 +325,18 @@ export const mapDispatchToProps = (dispatch) => {
     },
     cancelTransaction: ({ id }) => dispatch(cancelTx({ id })),
     cancelAllTransactions: (txList) => dispatch(cancelTxs(txList)),
-    sendTransaction: (txData) =>
-      dispatch(updateAndApproveTx(customNonceMerge(txData))),
+    sendTransaction: (
+      txData,
+      dontShowLoadingIndicator,
+      loadingIndicatorMessage,
+    ) =>
+      dispatch(
+        updateAndApproveTx(
+          customNonceMerge(txData),
+          dontShowLoadingIndicator,
+          loadingIndicatorMessage,
+        ),
+      ),
     getNextNonce: () => dispatch(getNextNonce()),
     setDefaultHomeActiveTabName: (tabName) =>
       dispatch(setDefaultHomeActiveTabName(tabName)),
@@ -330,15 +352,6 @@ export const mapDispatchToProps = (dispatch) => {
     ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
     getCustodianConfirmDeepLink: (id) =>
       dispatch(mmiActions.getCustodianConfirmDeepLink(id)),
-    showCustodyConfirmLink: ({ link, address, closeNotification, custodyId }) =>
-      dispatch(
-        mmiActions.showCustodyConfirmLink({
-          link,
-          address,
-          closeNotification,
-          custodyId,
-        }),
-      ),
     showTransactionsFailedModal: (errorMessage, closeNotification) =>
       dispatch(
         showModal({
@@ -362,6 +375,7 @@ export const mapDispatchToProps = (dispatch) => {
         closeNotification,
         onDeepLinkFetched,
         onDeepLinkShown,
+        showCustodyConfirmLink,
       }),
     setWaitForConfirmDeepLinkDialog: (wait) =>
       dispatch(mmiActions.setWaitForConfirmDeepLinkDialog(wait)),

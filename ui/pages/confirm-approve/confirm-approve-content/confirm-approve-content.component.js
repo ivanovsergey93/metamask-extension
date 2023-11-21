@@ -6,16 +6,13 @@ import { getTokenTrackerLink } from '@metamask/etherscan-link';
 import UrlIcon from '../../../components/ui/url-icon';
 import { addressSummary } from '../../../helpers/utils/util';
 import { formatCurrency } from '../../../helpers/utils/confirm-tx.util';
-import Box from '../../../components/ui/box';
 import Button from '../../../components/ui/button';
 import SimulationErrorMessage from '../../../components/ui/simulation-error-message';
 import EditGasFeeButton from '../../../components/app/edit-gas-fee-button';
 import MultiLayerFeeMessage from '../../../components/app/multilayer-fee-message';
 import SecurityProviderBannerMessage from '../../../components/app/security-provider-banner-message/security-provider-banner-message';
-import { SECURITY_PROVIDER_MESSAGE_SEVERITIES } from '../../../components/app/security-provider-banner-message/security-provider-banner-message.constants';
 import {
   BLOCK_SIZES,
-  JustifyContent,
   DISPLAY,
   TextColor,
   IconColor,
@@ -24,6 +21,16 @@ import {
 } from '../../../helpers/constants/design-system';
 import { ConfirmPageContainerWarning } from '../../../components/app/confirm-page-container/confirm-page-container-content';
 import LedgerInstructionField from '../../../components/app/ledger-instruction-field';
+///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+import BlockaidBannerAlert from '../../../components/app/security-provider-banner-alert/blockaid-banner-alert/blockaid-banner-alert';
+import { getBlockaidMetricsParams } from '../../../helpers/utils/metrics';
+import {
+  MetaMetricsEventCategory,
+  MetaMetricsEventName,
+} from '../../../../shared/constants/metametrics';
+///: END:ONLY_INCLUDE_IN
+import { isSuspiciousResponse } from '../../../../shared/modules/security-provider.utils';
+
 import { TokenStandard } from '../../../../shared/constants/transaction';
 import { CHAIN_IDS, TEST_CHAINS } from '../../../../shared/constants/network';
 import ContractDetailsModal from '../../../components/app/modals/contract-details-modal/contract-details-modal';
@@ -32,15 +39,21 @@ import {
   Icon,
   IconName,
   Text,
+  Box,
 } from '../../../components/component-library';
 import TransactionDetailItem from '../../../components/app/transaction-detail-item/transaction-detail-item.component';
 import UserPreferencedCurrencyDisplay from '../../../components/app/user-preferenced-currency-display';
 import { PRIMARY, SECONDARY } from '../../../helpers/constants/common';
 import { ConfirmGasDisplay } from '../../../components/app/confirm-gas-display';
+import CustomNonce from '../../../components/app/custom-nonce';
+import { COPY_OPTIONS } from '../../../../shared/constants/copy';
 
 export default class ConfirmApproveContent extends Component {
   static contextTypes = {
     t: PropTypes.func,
+    ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+    trackEvent: PropTypes.func,
+    ///: END:ONLY_INCLUDE_IN
   };
 
   static propTypes = {
@@ -89,6 +102,26 @@ export default class ConfirmApproveContent extends Component {
     copied: false,
     setShowContractDetails: false,
   };
+
+  ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+  componentDidMount() {
+    const { txData } = this.props;
+    if (txData.securityAlertResponse) {
+      const blockaidMetricsParams = getBlockaidMetricsParams(
+        txData.securityAlertResponse,
+      );
+
+      this.context.trackEvent({
+        category: MetaMetricsEventCategory.Transactions,
+        event: MetaMetricsEventName.SignatureRequested,
+        properties: {
+          action: 'Sign Request',
+          ...blockaidMetricsParams,
+        },
+      });
+    }
+  }
+  ///: END:ONLY_INCLUDE_IN
 
   renderApproveContentCard({
     showHeader = true,
@@ -270,7 +303,7 @@ export default class ConfirmApproveContent extends Component {
           <div className="confirm-approve-content__medium-text">
             <ButtonIcon
               ariaLabel="copy"
-              onClick={() => copyToClipboard(toAddress)}
+              onClick={() => copyToClipboard(toAddress, COPY_OPTIONS)}
               color={IconColor.iconDefault}
               iconName={
                 this.state.copied ? IconName.CopySuccess : IconName.Copy
@@ -296,26 +329,33 @@ export default class ConfirmApproveContent extends Component {
     ///: END:ONLY_INCLUDE_IN
 
     return (
-      <div className="flex-column">
-        <div className="confirm-approve-content__small-text">
+      <Box className="flex-column">
+        <Text className="confirm-approve-content__small-text">
           {isSetApproveForAll
             ? t('functionSetApprovalForAll')
             : t('functionApprove')}
-        </div>
+        </Text>
         {isSetApproveForAll && isApprovalOrRejection !== undefined ? (
-          <div className="confirm-approve-content__small-text">
-            {`${t('parameters')}: ${isApprovalOrRejection}`}
+          <>
+            <Text className="confirm-approve-content__small-text">
+              {`${t('parameters')}: ${isApprovalOrRejection}`}
+            </Text>
             {
               ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
-              `${t('tokenContractAddress')}: ${tokenAddress}`
+              <Text
+                variant={TextVariant.bodySm}
+                color={TextColor.textAlternative}
+              >
+                {`${t('tokenContractAddress')}: ${tokenAddress}`}
+              </Text>
               ///: END:ONLY_INCLUDE_IN
             }
-          </div>
+          </>
         ) : null}
-        <div className="confirm-approve-content__small-text confirm-approve-content__data__data-block">
+        <Text className="confirm-approve-content__small-text confirm-approve-content__data__data-block">
           {data}
-        </div>
-      </div>
+        </Text>
+      </Box>
     );
   }
 
@@ -348,55 +388,6 @@ export default class ConfirmApproveContent extends Component {
       );
     }
     return null;
-  }
-
-  renderCustomNonceContent() {
-    const { t } = this.context;
-    const {
-      useNonceField,
-      customNonceValue,
-      updateCustomNonce,
-      getNextNonce,
-      nextNonce,
-      showCustomizeNonceModal,
-    } = this.props;
-    return (
-      <>
-        {useNonceField && (
-          <div className="confirm-approve-content__custom-nonce-content">
-            <Box
-              className="confirm-approve-content__custom-nonce-header"
-              justifyContent={JustifyContent.flexStart}
-            >
-              <Text variant={TextVariant.bodySm} as="h6">
-                {t('nonce')}
-              </Text>
-              <Button
-                type="link"
-                className="confirm-approve-content__custom-nonce-edit"
-                onClick={() =>
-                  showCustomizeNonceModal({
-                    nextNonce,
-                    customNonceValue,
-                    updateCustomNonce,
-                    getNextNonce,
-                  })
-                }
-              >
-                {t('edit')}
-              </Button>
-            </Box>
-            <Text
-              className="confirm-approve-content__custom-nonce-value"
-              variant={TextVariant.bodySmBold}
-              as="h6"
-            >
-              {customNonceValue || nextNonce}
-            </Text>
-          </div>
-        )}
-      </>
-    );
   }
 
   getTokenName() {
@@ -465,7 +456,7 @@ export default class ConfirmApproveContent extends Component {
         <span
           className="confirm-approve-content__approval-asset-title"
           onClick={() => {
-            copyToClipboard(tokenAddress);
+            copyToClipboard(tokenAddress, COPY_OPTIONS);
           }}
           title={tokenAddress}
         >
@@ -585,6 +576,11 @@ export default class ConfirmApproveContent extends Component {
       userAcknowledgedGasMissing,
       setUserAcknowledgedGasMissing,
       renderSimulationFailureWarning,
+      nextNonce,
+      getNextNonce,
+      customNonceValue,
+      updateCustomNonce,
+      showCustomizeNonceModal,
     } = this.props;
     const { showFullTxDetails, setShowContractDetails } = this.state;
 
@@ -594,15 +590,19 @@ export default class ConfirmApproveContent extends Component {
           'confirm-approve-content--full': showFullTxDetails,
         })}
       >
-        {(txData?.securityProviderResponse?.flagAsDangerous !== undefined &&
-          txData?.securityProviderResponse?.flagAsDangerous !==
-            SECURITY_PROVIDER_MESSAGE_SEVERITIES.NOT_MALICIOUS) ||
-        (txData?.securityProviderResponse &&
-          Object.keys(txData.securityProviderResponse).length === 0) ? (
+        {
+          ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+          <BlockaidBannerAlert
+            securityAlertResponse={txData?.securityAlertResponse}
+            margin={4}
+          />
+          ///: END:ONLY_INCLUDE_IN
+        }
+        {isSuspiciousResponse(txData?.securityProviderResponse) && (
           <SecurityProviderBannerMessage
             securityProviderResponse={txData.securityProviderResponse}
           />
-        ) : null}
+        )}
         {warning && (
           <div className="confirm-approve-content__custom-nonce-warning">
             <ConfirmPageContainerWarning warning={warning} />
@@ -712,7 +712,20 @@ export default class ConfirmApproveContent extends Component {
           {useNonceField &&
             this.renderApproveContentCard({
               showHeader: false,
-              content: this.renderCustomNonceContent(),
+              content: (
+                <CustomNonce
+                  nextNonce={nextNonce}
+                  customNonceValue={customNonceValue}
+                  showCustomizeNonceModal={() => {
+                    showCustomizeNonceModal({
+                      nextNonce,
+                      customNonceValue,
+                      updateCustomNonce,
+                      getNextNonce,
+                    });
+                  }}
+                />
+              ),
               useNonceField,
               noBorder: !showFullTxDetails,
               footer: (

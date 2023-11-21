@@ -1,7 +1,8 @@
 /* eslint-disable */
-import { KeyringController } from '@metamask/eth-keyring-controller';
+import { KeyringController } from '@metamask/keyring-controller';
 import { MmiConfigurationController } from '@metamask-institutional/custody-keyring';
 import { TransactionUpdateController } from '@metamask-institutional/transaction-update';
+import { SignatureController } from '@metamask/signature-controller';
 
 import MMIController from './mmi-controller';
 import TransactionController from './transactions';
@@ -12,32 +13,40 @@ describe('MMIController', function () {
   let mmiController;
 
   beforeEach(function () {
+    const mockMessenger = {
+      call: jest.fn(() => ({
+        catch: jest.fn(),
+      })),
+      registerActionHandler: jest.fn(),
+      publish: jest.fn(),
+      subscribe: jest.fn(),
+    };
+
     mmiController = new MMIController({
       mmiConfigurationController: new MmiConfigurationController(),
       keyringController: new KeyringController({
+        messenger: mockMessenger,
         initState: {},
       }),
       transactionUpdateController: new TransactionUpdateController({
         getCustodyKeyring: jest.fn(),
       }),
-      txController: new TransactionController({
-        initState: {},
-        provider: {
-          chainId: 'fail',
-          nickname: '',
-          rpcTarget: 'https://api.myetherwallet.com/eth',
-          ticker: 'ETH',
-          type: 'rinkeby',
-        },
+      signatureController: new SignatureController({
+        messenger: mockMessenger,
+        keyringController: new KeyringController({
+          initState: {},
+          messenger: mockMessenger,
+        }),
+        isEthSignEnabled: jest.fn(),
+        getAllState: jest.fn(),
+        securityProviderRequest: jest.fn(),
         getCurrentChainId: jest.fn(),
-        getNetworkId: jest.fn(),
-        onNetworkStateChange: jest.fn(),
       }),
       preferencesController: new PreferencesController({
         initState: {},
-        onInfuraIsBlocked: jest.fn(),
-        onInfuraIsUnblocked: jest.fn(),
+        onAccountRemoved: jest.fn(),
         provider: {},
+        networkConfigurations: {},
       }),
       appStateController: new AppStateController({
         addUnlockListener: jest.fn(),
@@ -53,16 +62,16 @@ describe('MMIController', function () {
             },
           })),
         },
-        qrHardwareStore: {
-          subscribe: jest.fn(),
-        },
-        messenger: {
-          call: jest.fn(() => ({
-            catch: jest.fn(),
-          })),
-        },
+        messenger: mockMessenger,
       }),
       custodianEventHandlerFactory: jest.fn(),
+        getTransactions: jest.fn(),
+        updateTransactionHash: jest.fn(),
+        trackTransactionEvents: jest.fn(),
+        setTxStatusSigned: jest.fn(),
+        setTxStatusSubmitted: jest.fn(),
+        setTxStatusFailed: jest.fn(),
+        updateTransaction: jest.fn(),
     });
   });
 
@@ -92,16 +101,17 @@ describe('MMIController', function () {
   });
 
   describe('trackTransactionEventFromCustodianEvent', function () {
-    it('should call txController._trackTransactionMetricsEvent', function () {
-      const txMeta = {};
+    it('should call trackTransactionEvents', function () {
       const event = 'event';
-      mmiController.txController._trackTransactionMetricsEvent = jest.fn();
 
-      mmiController.trackTransactionEventFromCustodianEvent(txMeta, event);
+      mmiController.trackTransactionEventFromCustodianEvent({}, event);
 
-      expect(
-        mmiController.txController._trackTransactionMetricsEvent,
-      ).toHaveBeenCalledWith(txMeta, event);
+      expect(mmiController.trackTransactionEvents).toHaveBeenCalledWith(
+        {
+          transactionMeta: {},
+        },
+        event,
+      );
     });
   });
 

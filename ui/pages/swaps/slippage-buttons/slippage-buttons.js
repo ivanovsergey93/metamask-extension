@@ -11,11 +11,18 @@ import {
   TextVariant,
   FontWeight,
   AlignItems,
-  DISPLAY,
+  Display,
 } from '../../../helpers/constants/design-system';
 import { getTranslatedStxErrorMessage } from '../swaps.util';
-import { Slippage } from '../../../../shared/constants/swaps';
-import { Text } from '../../../components/component-library';
+import {
+  Slippage,
+  SMART_SWAPS_FAQ_AND_RISK_DISCLOSURES_URL,
+} from '../../../../shared/constants/swaps';
+import {
+  Text,
+  ButtonLink,
+  ButtonLinkSize,
+} from '../../../components/component-library';
 
 export default function SlippageButtons({
   onSelect,
@@ -201,9 +208,9 @@ export default function SlippageButtons({
               </div>
             )}
             {smartTransactionsEnabled && (
-              <Box marginTop={2} display={DISPLAY.FLEX}>
+              <Box marginTop={2} display={Display.Flex}>
                 <Box
-                  display={DISPLAY.FLEX}
+                  display={Display.Flex}
                   alignItems={AlignItems.center}
                   paddingRight={3}
                 >
@@ -224,7 +231,20 @@ export default function SlippageButtons({
                       )}
                     />
                   ) : (
-                    <InfoTooltip position="top" contentText={t('stxTooltip')} />
+                    <InfoTooltip
+                      position="top"
+                      contentText={t('smartSwapsTooltip', [
+                        <ButtonLink
+                          key="smart-swaps-faq-and-risk-disclosures"
+                          size={ButtonLinkSize.Inherit}
+                          href={SMART_SWAPS_FAQ_AND_RISK_DISCLOSURES_URL}
+                          externalLink
+                          display={Display.Inline}
+                        >
+                          {t('faqAndRiskDisclosures')}
+                        </ButtonLink>,
+                      ])}
+                    />
                   )}
                 </Box>
                 <ToggleButton

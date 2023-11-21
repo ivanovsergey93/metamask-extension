@@ -12,10 +12,6 @@ import {
   ABOUT_US_ROUTE,
   SETTINGS_ROUTE,
   NETWORKS_ROUTE,
-  ///: BEGIN:ONLY_INCLUDE_IN(snaps)
-  SNAPS_VIEW_ROUTE,
-  SNAPS_LIST_ROUTE,
-  ///: END:ONLY_INCLUDE_IN
   CONTACT_LIST_ROUTE,
   CONTACT_ADD_ROUTE,
   CONTACT_EDIT_ROUTE,
@@ -33,8 +29,8 @@ import {
   ButtonIconSize,
   Icon,
   IconName,
-  Text,
   Box,
+  Text,
 } from '../../components/component-library';
 import {
   AlignItems,
@@ -54,10 +50,6 @@ import InfoTab from './info-tab';
 import SecurityTab from './security-tab';
 import ContactListTab from './contact-list-tab';
 import ExperimentalTab from './experimental-tab';
-///: BEGIN:ONLY_INCLUDE_IN(snaps)
-import SnapListTab from './snaps/snaps-list-tab';
-import ViewSnap from './snaps/view-snap';
-///: END:ONLY_INCLUDE_IN
 import SettingsSearch from './settings-search';
 import SettingsSearchList from './settings-search-list';
 
@@ -74,7 +66,6 @@ class SettingsPage extends PureComponent {
     initialBreadCrumbRoute: PropTypes.string,
     isAddressEntryPage: PropTypes.bool,
     isPopup: PropTypes.bool,
-    isSnapViewPage: PropTypes.bool,
     mostRecentOverviewPage: PropTypes.string.isRequired,
     pathnameI18nKey: PropTypes.string,
   };
@@ -121,7 +112,6 @@ class SettingsPage extends PureComponent {
       currentPath,
       mostRecentOverviewPage,
       addNewNetwork,
-      isSnapViewPage,
     } = this.props;
 
     const { searchResults, isSearchList, searchText } = this.state;
@@ -165,7 +155,7 @@ class SettingsPage extends PureComponent {
             {this.renderTitle()}
             <Box
               className="settings-page__header__title-container__search"
-              display={[Display.BLOCK]}
+              display={[Display.Block]}
             >
               <SettingsSearch
                 onSearch={({ searchQuery = '', results = [] }) => {
@@ -206,7 +196,7 @@ class SettingsPage extends PureComponent {
             {this.renderTabs()}
           </div>
           <div className="settings-page__content__modules">
-            {isSnapViewPage ? null : this.renderSubHeader()}
+            {this.renderSubHeader()}
             {this.renderContent()}
           </div>
         </div>
@@ -216,12 +206,9 @@ class SettingsPage extends PureComponent {
 
   renderTitle() {
     const { t } = this.context;
-    const { isPopup, pathnameI18nKey, addressName, isSnapViewPage } =
-      this.props;
+    const { isPopup, pathnameI18nKey, addressName } = this.props;
     let titleText;
-    if (isSnapViewPage) {
-      titleText = t('snaps');
-    } else if (isPopup && addressName) {
+    if (isPopup && addressName) {
       titleText = t('details');
     } else if (pathnameI18nKey && isPopup) {
       titleText = t(pathnameI18nKey);
@@ -267,6 +254,8 @@ class SettingsPage extends PureComponent {
         <Box
           className="settings-page__subheader"
           padding={4}
+          paddingLeft={6}
+          paddingRight={6}
           display={Display.Flex}
           flexDirection={FlexDirection.Row}
           alignItems={AlignItems.center}
@@ -318,15 +307,6 @@ class SettingsPage extends PureComponent {
         icon: <Icon name={IconName.Book} />,
         key: CONTACT_LIST_ROUTE,
       },
-      ///: BEGIN:ONLY_INCLUDE_IN(snaps)
-      {
-        content: t('snaps'),
-        icon: (
-          <Icon name={IconName.Snaps} title={t('snapsSettingsDescription')} />
-        ),
-        key: SNAPS_LIST_ROUTE,
-      },
-      ///: END:ONLY_INCLUDE_IN
       {
         content: t('securityAndPrivacy'),
         icon: <i className="fa fa-lock" />,
@@ -359,6 +339,12 @@ class SettingsPage extends PureComponent {
         tabs={tabs}
         isActive={(key) => {
           if (key === GENERAL_ROUTE && currentPath === SETTINGS_ROUTE) {
+            return true;
+          }
+          if (
+            key === CONTACT_LIST_ROUTE &&
+            currentPath.includes(CONTACT_LIST_ROUTE)
+          ) {
             return true;
           }
           return matchPath(currentPath, { exact: true, path: key });
@@ -413,16 +399,6 @@ class SettingsPage extends PureComponent {
           path={`${CONTACT_VIEW_ROUTE}/:id`}
           component={ContactListTab}
         />
-        {
-          ///: BEGIN:ONLY_INCLUDE_IN(snaps)
-          <Route exact path={SNAPS_LIST_ROUTE} component={SnapListTab} />
-          ///: END:ONLY_INCLUDE_IN
-        }
-        {
-          ///: BEGIN:ONLY_INCLUDE_IN(snaps)
-          <Route exact path={`${SNAPS_VIEW_ROUTE}/:id`} component={ViewSnap} />
-          ///: END:ONLY_INCLUDE_IN
-        }
         <Route
           render={(routeProps) => (
             <SettingsTab

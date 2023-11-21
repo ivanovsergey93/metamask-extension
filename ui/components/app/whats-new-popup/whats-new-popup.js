@@ -1,32 +1,37 @@
-import React, { useContext, useMemo, useRef, useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import { debounce } from 'lodash';
-import { getCurrentLocale } from '../../../ducks/locale/locale';
-import { I18nContext } from '../../../contexts/i18n';
-import { useEqualityCheck } from '../../../hooks/useEqualityCheck';
-import Button from '../../ui/button';
-import Popover from '../../ui/popover';
-import { Text } from '../../component-library';
-import { updateViewedNotifications } from '../../../store/actions';
-import { getTranslatedUINotifications } from '../../../../shared/notifications';
-import { getSortedAnnouncementsToShow } from '../../../selectors';
-import {
-  BUILD_QUOTE_ROUTE,
-  PREPARE_SWAP_ROUTE,
-  ADVANCED_ROUTE,
-  EXPERIMENTAL_ROUTE,
-  SECURITY_ROUTE,
-} from '../../../helpers/constants/routes';
-import { TextVariant } from '../../../helpers/constants/design-system';
-import ZENDESK_URLS from '../../../helpers/constants/zendesk-url';
-import { MetaMetricsContext } from '../../../contexts/metametrics';
+import PropTypes from 'prop-types';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { useHistory } from 'react-router-dom';
 import {
   MetaMetricsEventCategory,
   MetaMetricsEventName,
 } from '../../../../shared/constants/metametrics';
+import {
+  NOTIFICATION_BUY_SELL_BUTTON,
+  NOTIFICATION_DROP_LEDGER_FIREFOX,
+  NOTIFICATION_OPEN_BETA_SNAPS,
+  NOTIFICATION_U2F_LEDGER_LIVE,
+  getTranslatedUINotifications,
+} from '../../../../shared/notifications';
+import { I18nContext } from '../../../contexts/i18n';
+import { MetaMetricsContext } from '../../../contexts/metametrics';
+import { getCurrentLocale } from '../../../ducks/locale/locale';
+import { TextVariant } from '../../../helpers/constants/design-system';
+import {
+  ADVANCED_ROUTE,
+  BUILD_QUOTE_ROUTE,
+  EXPERIMENTAL_ROUTE,
+  PREPARE_SWAP_ROUTE,
+  SECURITY_ROUTE,
+} from '../../../helpers/constants/routes';
+import ZENDESK_URLS from '../../../helpers/constants/zendesk-url';
+import { useEqualityCheck } from '../../../hooks/useEqualityCheck';
+import { getSortedAnnouncementsToShow } from '../../../selectors';
+import { updateViewedNotifications } from '../../../store/actions';
+import { ButtonPrimary, Text } from '../../component-library';
+import Popover from '../../ui/popover';
 
 function getActionFunctionById(id, history) {
   const actionFunctions = {
@@ -74,7 +79,7 @@ function getActionFunctionById(id, history) {
     },
     18: () => {
       updateViewedNotifications({ 18: true });
-      history.push(`${EXPERIMENTAL_ROUTE}#transaction-security-check`);
+      history.push(`${EXPERIMENTAL_ROUTE}#security-alerts`);
     },
     19: () => {
       updateViewedNotifications({ 19: true });
@@ -89,6 +94,36 @@ function getActionFunctionById(id, history) {
     21: () => {
       updateViewedNotifications({ 21: true });
       history.push(PREPARE_SWAP_ROUTE);
+    },
+    22: () => {
+      updateViewedNotifications({ 22: true });
+    },
+    ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+    23: () => {
+      updateViewedNotifications({ 23: true });
+      history.push(`${EXPERIMENTAL_ROUTE}#security-alerts`);
+    },
+    ///: END:ONLY_INCLUDE_IN
+    24: () => {
+      updateViewedNotifications({ 24: true });
+    },
+    [NOTIFICATION_DROP_LEDGER_FIREFOX]: () => {
+      updateViewedNotifications({ [NOTIFICATION_DROP_LEDGER_FIREFOX]: true });
+    },
+    [NOTIFICATION_OPEN_BETA_SNAPS]: () => {
+      updateViewedNotifications({ [NOTIFICATION_OPEN_BETA_SNAPS]: true });
+      global.platform.openTab({
+        url: 'https://metamask.io/snaps/',
+      });
+    },
+    [NOTIFICATION_BUY_SELL_BUTTON]: () => {
+      updateViewedNotifications({ [NOTIFICATION_BUY_SELL_BUTTON]: true });
+      global.platform.openTab({
+        url: 'https://portfolio.metamask.io/sell/build-quote',
+      });
+    },
+    [NOTIFICATION_U2F_LEDGER_LIVE]: () => {
+      updateViewedNotifications({ [NOTIFICATION_U2F_LEDGER_LIVE]: true });
     },
   };
 
@@ -106,6 +141,7 @@ const renderDescription = (description) => {
         const isLast = index === description.length - 1;
         return (
           <Text
+            data-testid={`whats-new-description-item-${index}`}
             key={`item-${index}`}
             variant={TextVariant.bodyMd}
             marginBottom={isLast ? 0 : 4}
@@ -118,13 +154,13 @@ const renderDescription = (description) => {
   );
 };
 
-const renderFirstNotification = (
+const renderFirstNotification = ({
   notification,
   idRefMap,
   history,
   isLast,
   trackEvent,
-) => {
+}) => {
   const { id, date, title, description, image, actionText } = notification;
   const actionFunction = getActionFunctionById(id, history);
 
@@ -137,6 +173,7 @@ const renderFirstNotification = (
     />
   );
   const placeImageBelowDescription = image?.placeImageBelowDescription;
+
   return (
     <div
       className={classnames(
@@ -155,12 +192,12 @@ const renderFirstNotification = (
         <div className="whats-new-popup__notification-description">
           {renderDescription(description)}
         </div>
+
         <div className="whats-new-popup__notification-date">{date}</div>
       </div>
       {placeImageBelowDescription && imageComponent}
       {actionText && (
-        <Button
-          type="primary"
+        <ButtonPrimary
           className="whats-new-popup__button"
           onClick={() => {
             actionFunction();
@@ -169,9 +206,10 @@ const renderFirstNotification = (
               event: MetaMetricsEventName.WhatsNewClicked,
             });
           }}
+          block
         >
           {actionText}
-        </Button>
+        </ButtonPrimary>
       )}
       <div
         className="whats-new-popup__intersection-observable"
@@ -181,12 +219,12 @@ const renderFirstNotification = (
   );
 };
 
-const renderSubsequentNotification = (
+const renderSubsequentNotification = ({
   notification,
   idRefMap,
   history,
   isLast,
-) => {
+}) => {
   const { id, date, title, description, actionText } = notification;
 
   const actionFunction = getActionFunctionById(id, history);
@@ -262,6 +300,7 @@ export default function WhatsNewPopup({ onClose }) {
       },
     );
   };
+
   useEffect(() => {
     const observer = new window.IntersectionObserver(
       (entries, _observer) => {
@@ -295,6 +334,26 @@ export default function WhatsNewPopup({ onClose }) {
     };
   }, [idRefMap, setSeenNotifications]);
 
+  // Display the swaps notification with full image
+  // Displays the NFTs & OpenSea notifications 18,19 with full image
+  const notificationRenderers = {
+    0: renderFirstNotification,
+    1: renderFirstNotification,
+    18: renderFirstNotification,
+    19: renderFirstNotification,
+    21: renderFirstNotification,
+    22: renderFirstNotification,
+    ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+    23: renderFirstNotification,
+    ///: END:ONLY_INCLUDE_IN
+    24: renderFirstNotification,
+    // This syntax is unusual, but very helpful here.  It's equivalent to `notificationRenderers[NOTIFICATION_DROP_LEDGER_FIREFOX] =`
+    [NOTIFICATION_DROP_LEDGER_FIREFOX]: renderFirstNotification,
+    [NOTIFICATION_OPEN_BETA_SNAPS]: renderFirstNotification,
+    [NOTIFICATION_BUY_SELL_BUTTON]: renderFirstNotification,
+    [NOTIFICATION_U2F_LEDGER_LIVE]: renderFirstNotification,
+  };
+
   return (
     <Popover
       title={t('whatsNew')}
@@ -321,22 +380,17 @@ export default function WhatsNewPopup({ onClose }) {
         {notifications.map(({ id }, index) => {
           const notification = getTranslatedUINotifications(t, locale)[id];
           const isLast = index === notifications.length - 1;
-          // Display the swaps notification with full image
-          // Displays the NFTs & OpenSea notifications 18,19 with full image
-          return index === 0 || id === 1 || id === 18 || id === 19 || id === 21
-            ? renderFirstNotification(
-                notification,
-                idRefMap,
-                history,
-                isLast,
-                trackEvent,
-              )
-            : renderSubsequentNotification(
-                notification,
-                idRefMap,
-                history,
-                isLast,
-              );
+          // Choose the appropriate rendering function based on the id
+          const renderNotification =
+            notificationRenderers[id] || renderSubsequentNotification;
+
+          return renderNotification({
+            notification,
+            idRefMap,
+            history,
+            isLast,
+            trackEvent,
+          });
         })}
       </div>
     </Popover>

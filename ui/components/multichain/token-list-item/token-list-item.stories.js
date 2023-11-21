@@ -2,7 +2,11 @@ import React from 'react';
 import { Provider } from 'react-redux';
 import testData from '../../../../.storybook/test-data';
 import configureStore from '../../../store/store';
-import { TokenListItem } from './token-list-item';
+import {
+  CHAIN_IDS,
+  CURRENCY_SYMBOLS,
+} from '../../../../shared/constants/network';
+import { TokenListItem } from '.';
 
 export default {
   title: 'Components/Multichain/MultichainTokenListItem',
@@ -31,14 +35,19 @@ export default {
     secondary: '$9.80 USD',
     primary: '88.0068',
     tokenImage: './images/eth_logo.png',
-    tokenSymbol: 'ETH',
+    tokenSymbol: CURRENCY_SYMBOLS.ETH,
     title: 'Ethereum',
   },
 };
 
 const customNetworkData = {
   ...testData,
-  metamask: { ...testData.metamask, nativeCurrency: '' },
+  metamask: {
+    ...testData.metamask,
+    providerConfig: {
+      chainId: CHAIN_IDS.MAINNET,
+    },
+  },
 };
 const customNetworkStore = configureStore(customNetworkData);
 
@@ -47,6 +56,13 @@ const Template = (args) => {
 };
 
 export const DefaultStory = Template.bind({});
+DefaultStory.decorators = [
+  (Story) => (
+    <Provider store={customNetworkStore}>
+      <Story />
+    </Provider>
+  ),
+];
 
 export const ChaosStory = (args) => (
   <div
@@ -55,7 +71,13 @@ export const ChaosStory = (args) => (
     <TokenListItem {...args} />
   </div>
 );
-ChaosStory.storyName = 'ChaosStory';
+ChaosStory.decorators = [
+  (Story) => (
+    <Provider store={customNetworkStore}>
+      <Story />
+    </Provider>
+  ),
+];
 
 ChaosStory.args = {
   title: 'Really long, long name',
@@ -64,14 +86,6 @@ ChaosStory.args = {
 };
 
 export const NoImagesStory = Template.bind({});
-
-NoImagesStory.decorators = [
-  (Story) => (
-    <Provider store={customNetworkStore}>
-      <Story />
-    </Provider>
-  ),
-];
 
 NoImagesStory.args = {
   tokenImage: '',

@@ -3,6 +3,9 @@ import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import { ObjectInspector } from 'react-inspector';
 import { ethErrors, serializeError } from 'eth-rpc-errors';
+///: BEGIN:ONLY_INCLUDE_IN(snaps)
+import { SubjectType } from '@metamask/permission-controller';
+///: END:ONLY_INCLUDE_IN
 import LedgerInstructionField from '../ledger-instruction-field';
 import { MESSAGE_TYPE } from '../../../../shared/constants/app';
 import {
@@ -13,7 +16,7 @@ import {
   ///: END:ONLY_INCLUDE_IN
 } from '../../../helpers/utils/util';
 import { stripHexPrefix } from '../../../../shared/modules/hexstring-utils';
-import Button from '../../ui/button';
+import { isSuspiciousResponse } from '../../../../shared/modules/security-provider.utils';
 import SiteOrigin from '../../ui/site-origin';
 import Typography from '../../ui/typography/typography';
 import { PageContainerFooter } from '../../ui/page-container';
@@ -22,27 +25,45 @@ import {
   FontWeight,
   TextAlign,
   TextColor,
+  Size,
   ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
   IconColor,
-  DISPLAY,
-  BLOCK_SIZES,
+  Display,
+  BlockSize,
   TextVariant,
   BackgroundColor,
   ///: END:ONLY_INCLUDE_IN
 } from '../../../helpers/constants/design-system';
+import {
+  ButtonLink,
+  ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
+  Box,
+  Icon,
+  IconName,
+  Text,
+  ///: END:ONLY_INCLUDE_IN
+} from '../../component-library';
+///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+import {
+  MetaMetricsEventCategory,
+  MetaMetricsEventName,
+} from '../../../../shared/constants/metametrics';
+import { getBlockaidMetricsParams } from '../../../helpers/utils/metrics';
+import BlockaidBannerAlert from '../security-provider-banner-alert/blockaid-banner-alert/blockaid-banner-alert';
+///: END:ONLY_INCLUDE_IN
 import ConfirmPageContainerNavigation from '../confirm-page-container/confirm-page-container-navigation';
 import SecurityProviderBannerMessage from '../security-provider-banner-message/security-provider-banner-message';
-import { SECURITY_PROVIDER_MESSAGE_SEVERITIES } from '../security-provider-banner-message/security-provider-banner-message.constants';
-///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
-import { Icon, IconName, Text } from '../../component-library';
-import Box from '../../ui/box/box';
-///: END:ONLY_INCLUDE_IN
+
 import SignatureRequestHeader from '../signature-request-header';
+///: BEGIN:ONLY_INCLUDE_IN(snaps)
+import SnapLegacyAuthorshipHeader from '../snaps/snap-legacy-authorship-header';
+///: END:ONLY_INCLUDE_IN
 import SignatureRequestOriginalWarning from './signature-request-original-warning';
 
 export default class SignatureRequestOriginal extends Component {
   static contextTypes = {
     t: PropTypes.func.isRequired,
+    trackEvent: PropTypes.func,
   };
 
   static propTypes = {
@@ -50,9 +71,6 @@ export default class SignatureRequestOriginal extends Component {
       address: PropTypes.string.isRequired,
       name: PropTypes.string,
     }).isRequired,
-    clearConfirmTransaction: PropTypes.func.isRequired,
-    history: PropTypes.object.isRequired,
-    mostRecentOverviewPage: PropTypes.string.isRequired,
     txData: PropTypes.object.isRequired,
     subjectMetadata: PropTypes.object,
     hardwareWalletRequiresConnection: PropTypes.bool,
@@ -61,16 +79,42 @@ export default class SignatureRequestOriginal extends Component {
     showRejectTransactionsConfirmationModal: PropTypes.func.isRequired,
     cancelAllApprovals: PropTypes.func.isRequired,
     rejectPendingApproval: PropTypes.func.isRequired,
+    clearConfirmTransaction: PropTypes.func.isRequired,
+    history: PropTypes.object.isRequired,
+    mostRecentOverviewPage: PropTypes.string.isRequired,
     resolvePendingApproval: PropTypes.func.isRequired,
     completedTx: PropTypes.func.isRequired,
     ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
+    // Used to show a warning if the signing account is not the selected account
+    // Largely relevant for contract wallet custodians
     selectedAccount: PropTypes.object,
+    mmiOnSignCallback: PropTypes.func,
     ///: END:ONLY_INCLUDE_IN
   };
 
   state = {
     showSignatureRequestWarning: false,
   };
+
+  ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+  componentDidMount() {
+    const { txData } = this.props;
+    if (txData.securityAlertResponse) {
+      const blockaidMetricsParams = getBlockaidMetricsParams(
+        txData.securityAlertResponse,
+      );
+
+      this.context.trackEvent({
+        category: MetaMetricsEventCategory.Transactions,
+        event: MetaMetricsEventName.SignatureRequested,
+        properties: {
+          action: 'Sign Request',
+          ...blockaidMetricsParams,
+        },
+      });
+    }
+  }
+  ///: END:ONLY_INCLUDE_IN
 
   msgHexToText = (hex) => {
     try {
@@ -133,24 +177,27 @@ export default class SignatureRequestOriginal extends Component {
 
     return (
       <div className="request-signature__body">
-        {(txData?.securityProviderResponse?.flagAsDangerous !== undefined &&
-          txData?.securityProviderResponse?.flagAsDangerous !==
-            SECURITY_PROVIDER_MESSAGE_SEVERITIES.NOT_MALICIOUS) ||
-        (txData?.securityProviderResponse &&
-          Object.keys(txData.securityProviderResponse).length === 0) ? (
+        {
+          ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+          <BlockaidBannerAlert
+            securityAlertResponse={txData?.securityAlertResponse}
+            margin={4}
+          />
+          ///: END:ONLY_INCLUDE_IN
+        }
+        {isSuspiciousResponse(txData?.securityProviderResponse) && (
           <SecurityProviderBannerMessage
             securityProviderResponse={txData.securityProviderResponse}
           />
-        ) : null}
-
+        )}
         {
           ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
           this.props.selectedAccount.address ===
           this.props.fromAccount.address ? null : (
             <Box
               className="request-signature__mismatch-info"
-              display={DISPLAY.FLEX}
-              width={BLOCK_SIZES.FULL}
+              Display={Display.Flex}
+              width={BlockSize.Full}
               padding={4}
               marginBottom={4}
               backgroundColor={BackgroundColor.primaryMuted}
@@ -160,11 +207,7 @@ export default class SignatureRequestOriginal extends Component {
                 color={IconColor.infoDefault}
                 marginRight={2}
               />
-              <Text
-                variant={TextVariant.bodyXs}
-                color={TextColor.textDefault}
-                as="h7"
-              >
+              <Text variant={TextVariant.bodyXs} color={TextColor.textDefault}>
                 {this.context.t('mismatchAccount', [
                   shortenAddress(this.props.selectedAccount.address),
                   shortenAddress(this.props.fromAccount.address),
@@ -174,20 +217,33 @@ export default class SignatureRequestOriginal extends Component {
           )
           ///: END:ONLY_INCLUDE_IN
         }
-
         <div className="request-signature__origin">
-          <SiteOrigin
-            title={txData.msgParams.origin}
-            siteOrigin={txData.msgParams.origin}
-            iconSrc={targetSubjectMetadata?.iconUrl}
-            iconName={
-              getURLHostName(targetSubjectMetadata?.origin) ||
-              targetSubjectMetadata?.origin
-            }
-            chip
-          />
+          {
+            // Use legacy authorship header for snaps
+            ///: BEGIN:ONLY_INCLUDE_IN(snaps)
+            targetSubjectMetadata?.subjectType === SubjectType.Snap ? (
+              <SnapLegacyAuthorshipHeader
+                snapId={targetSubjectMetadata.origin}
+                marginLeft={4}
+                marginRight={4}
+              />
+            ) : (
+              ///: END:ONLY_INCLUDE_IN
+              <SiteOrigin
+                title={txData.msgParams.origin}
+                siteOrigin={txData.msgParams.origin}
+                iconSrc={targetSubjectMetadata?.iconUrl}
+                iconName={
+                  getURLHostName(targetSubjectMetadata?.origin) ||
+                  targetSubjectMetadata?.origin
+                }
+                chip
+              />
+              ///: BEGIN:ONLY_INCLUDE_IN(snaps)
+            )
+            ///: END:ONLY_INCLUDE_IN
+          }
         </div>
-
         <Typography
           className="request-signature__content__title"
           variant={TypographyVariant.H3}
@@ -205,7 +261,6 @@ export default class SignatureRequestOriginal extends Component {
         >
           {this.context.t('signatureRequestGuidance')}
         </Typography>
-
         <div className={classnames('request-signature__notice')}>{notice}</div>
         <div className="request-signature__rows">
           {rows.map(({ name, value }, index) => {
@@ -234,16 +289,22 @@ export default class SignatureRequestOriginal extends Component {
 
   onSubmit = async () => {
     const {
+      resolvePendingApproval,
+      completedTx,
       clearConfirmTransaction,
       history,
       mostRecentOverviewPage,
-      resolvePendingApproval,
-      completedTx,
-      txData: { id },
+      txData,
     } = this.props;
+    ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
+    if (this.props.mmiOnSignCallback) {
+      await this.props.mmiOnSignCallback(txData);
+      return;
+    }
+    ///: END:ONLY_INCLUDE_IN
 
-    await resolvePendingApproval(id);
-    completedTx(id);
+    await resolvePendingApproval(txData.id);
+    completedTx(txData.id);
     clearConfirmTransaction();
     history.push(mostRecentOverviewPage);
   };
@@ -270,7 +331,7 @@ export default class SignatureRequestOriginal extends Component {
       clearConfirmTransaction,
       history,
       mostRecentOverviewPage,
-      txData: { type, id },
+      txData,
       hardwareWalletRequiresConnection,
       rejectPendingApproval,
       resolvePendingApproval,
@@ -283,22 +344,34 @@ export default class SignatureRequestOriginal extends Component {
         submitText={t('sign')}
         onCancel={async () => {
           await rejectPendingApproval(
-            id,
+            txData.id,
             serializeError(ethErrors.provider.userRejectedRequest()),
           );
           clearConfirmTransaction();
           history.push(mostRecentOverviewPage);
         }}
         onSubmit={async () => {
-          if (type === MESSAGE_TYPE.ETH_SIGN) {
+          if (txData.type === MESSAGE_TYPE.ETH_SIGN) {
             this.setState({ showSignatureRequestWarning: true });
           } else {
-            await resolvePendingApproval(id);
+            ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
+            if (this.props.mmiOnSignCallback) {
+              await this.props.mmiOnSignCallback(txData);
+              return;
+            }
+            ///: END:ONLY_INCLUDE_IN
+
+            await resolvePendingApproval(txData.id);
             clearConfirmTransaction();
             history.push(mostRecentOverviewPage);
           }
         }}
-        disabled={hardwareWalletRequiresConnection}
+        disabled={
+          ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
+          Boolean(txData?.custodyId) ||
+          ///: END:ONLY_INCLUDE_IN
+          hardwareWalletRequiresConnection
+        }
       />
     );
   };
@@ -359,13 +432,13 @@ export default class SignatureRequestOriginal extends Component {
         )}
         {this.renderFooter()}
         {messagesCount > 1 ? (
-          <Button
-            type="link"
+          <ButtonLink
+            size={Size.inherit}
             className="request-signature__container__reject"
             onClick={() => this.handleCancelAll()}
           >
             {rejectNText}
-          </Button>
+          </ButtonLink>
         ) : null}
       </div>
     );

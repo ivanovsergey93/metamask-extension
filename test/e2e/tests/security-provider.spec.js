@@ -83,7 +83,7 @@ describe('Transaction security provider', function () {
           .withPermissionControllerConnectedToTestDapp()
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
         testSpecificMock: async (mockServer) =>
           await mockSecurityProviderDetection(mockServer, 'malicious'),
         dapp: true,
@@ -106,7 +106,7 @@ describe('Transaction security provider', function () {
         );
         const warningHeader = await driver.isElementPresent({
           text: 'This could be a scam',
-          tag: 'h5',
+          tag: 'p',
         });
         assert.equal(warningHeader, true);
       },
@@ -123,7 +123,7 @@ describe('Transaction security provider', function () {
           .withPermissionControllerConnectedToTestDapp()
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
         testSpecificMock: async (mockServer) =>
           await mockSecurityProviderDetection(mockServer, 'notSafe'),
         dapp: true,
@@ -146,7 +146,7 @@ describe('Transaction security provider', function () {
         );
         const warningHeader = await driver.isElementPresent({
           text: 'Request may not be safe',
-          tag: 'h5',
+          tag: 'p',
         });
         assert.equal(warningHeader, true);
       },
@@ -163,7 +163,7 @@ describe('Transaction security provider', function () {
           .withPermissionControllerConnectedToTestDapp()
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
         testSpecificMock: async (mockServer) =>
           await mockSecurityProviderDetection(mockServer, 'notMalicious'),
         dapp: true,
@@ -186,7 +186,7 @@ describe('Transaction security provider', function () {
         );
         const warningHeader = await driver.isElementPresent({
           text: 'Request may not be safe',
-          tag: 'h5',
+          tag: 'p',
         });
         assert.equal(warningHeader, false);
       },
@@ -203,7 +203,7 @@ describe('Transaction security provider', function () {
           .withPermissionControllerConnectedToTestDapp()
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
         testSpecificMock: async (mockServer) =>
           await mockSecurityProviderDetection(mockServer, 'requestNotVerified'),
         dapp: true,
@@ -226,7 +226,7 @@ describe('Transaction security provider', function () {
         );
         const warningHeader = await driver.isElementPresent({
           text: 'Request not verified',
-          tag: 'h5',
+          tag: 'p',
         });
         assert.equal(warningHeader, true);
       },

@@ -1,6 +1,7 @@
 /* eslint-disable jest/require-top-level-describe */
 import React from 'react';
-import { screen, fireEvent } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
+import { toChecksumHexAddress } from '@metamask/controller-utils';
 import { renderWithProvider } from '../../../../test/jest';
 import configureStore from '../../../store/store';
 import mockState from '../../../../test/data/mock-state.json';
@@ -34,7 +35,7 @@ describe('AccountListItem', () => {
     const { container } = render();
     expect(screen.getByText(identity.name)).toBeInTheDocument();
     expect(
-      screen.getByText(shortenAddress(identity.address)),
+      screen.getByText(shortenAddress(toChecksumHexAddress(identity.address))),
     ).toBeInTheDocument();
     expect(document.querySelector('[title="0.006 ETH"]')).toBeInTheDocument();
 
@@ -61,8 +62,8 @@ describe('AccountListItem', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders the tree-dot menu to lauch the details menu', () => {
-    render();
+  it('renders the three-dot menu to lauch the details menu', () => {
+    render({ showOptions: true });
     const optionsButton = document.querySelector(
       '[aria-label="Test Account Options"]',
     );
@@ -83,7 +84,7 @@ describe('AccountListItem', () => {
 
   it('clicking the three-dot menu opens up options', () => {
     const onClick = jest.fn();
-    render({ onClick });
+    render({ onClick, showOptions: true });
     const item = document.querySelector(
       '[data-testid="account-list-item-menu-button"]',
     );
@@ -102,4 +103,17 @@ describe('AccountListItem', () => {
 
     expect(getByAltText(`${connectedAvatarName} logo`)).toBeInTheDocument();
   });
+
+  ///: BEGIN:ONLY_INCLUDE_IN(keyring-snaps)
+  it('renders the snap label for snap accounts', () => {
+    const { getByText } = render({
+      identity: {
+        address: '0xb552685e3d2790eFd64a175B00D51F02cdaFEe5D',
+        name: 'Snap Account',
+      },
+    });
+
+    expect(getByText('Snaps (Beta)')).toBeInTheDocument();
+  });
+  ///: END:ONLY_INCLUDE_IN
 });

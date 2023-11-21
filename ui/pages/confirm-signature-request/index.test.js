@@ -32,6 +32,7 @@ const mockState = {
     },
     unapprovedTypedMessagesCount: 1,
     providerConfig: { chainId: '0x5', type: 'goerli' },
+    currencyRates: {},
     keyrings: [],
     networkConfigurations: {},
     subjectMetadata: {},
@@ -57,7 +58,7 @@ const mockState = {
   send: { draftTransactions: {} },
 };
 
-describe('Signature Request Component', () => {
+describe('Confirm Signature Request Component', () => {
   const store = configureMockStore()(mockState);
 
   describe('render', () => {

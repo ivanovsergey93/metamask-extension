@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { isComponent } from '@metamask/snaps-ui';
+import { isComponent } from '@metamask/snaps-sdk';
 import { useSelector } from 'react-redux';
 import MetaMaskTemplateRenderer from '../../metamask-template-renderer/metamask-template-renderer';
 import {
@@ -10,6 +10,7 @@ import {
   OverflowWrap,
   FontWeight,
   TextVariant,
+  BorderColor,
 } from '../../../../helpers/constants/design-system';
 import { SnapDelineator } from '../snap-delineator';
 import { useI18nContext } from '../../../../hooks/useI18nContext';
@@ -45,6 +46,9 @@ export const UI_MAPPING = {
   text: (props) => ({
     element: 'SnapUIMarkdown',
     children: props.value,
+    props: {
+      markdown: props.markdown,
+    },
   }),
   spinner: () => ({
     element: 'Spinner',
@@ -53,15 +57,24 @@ export const UI_MAPPING = {
     },
   }),
   divider: () => ({
-    element: 'hr',
+    element: 'Box',
     props: {
       className: 'snap-ui-renderer__divider',
+      backgroundColor: BorderColor.borderDefault,
+      marginTop: 2,
+      marginBottom: 2,
     },
   }),
   copyable: (props) => ({
     element: 'Copyable',
     props: {
       text: props.value,
+    },
+  }),
+  image: (props) => ({
+    element: 'SnapUIImage',
+    props: {
+      value: props.value,
     },
   }),
 };
@@ -79,7 +92,12 @@ export const mapToTemplate = (data, elementKeyIndex) => {
 export const SnapUIRenderer = ({
   snapId,
   delineatorType = DelineatorType.Content,
+  isCollapsable = false,
+  isCollapsed = false,
+  isLoading = false,
   data,
+  onClick,
+  boxProps,
 }) => {
   const t = useI18nContext();
   const targetSubjectMetadata = useSelector((state) =>
@@ -88,9 +106,30 @@ export const SnapUIRenderer = ({
 
   const snapName = getSnapName(snapId, targetSubjectMetadata);
 
+  if (isLoading) {
+    return (
+      <SnapDelineator
+        snapName={snapName}
+        type={delineatorType}
+        isCollapsable={isCollapsable}
+        isCollapsed={isCollapsed}
+        onClick={onClick}
+        boxProps={boxProps}
+        isLoading={isLoading}
+      />
+    );
+  }
+
   if (!isComponent(data)) {
     return (
-      <SnapDelineator snapName={snapName} type={DelineatorType.Error}>
+      <SnapDelineator
+        isCollapsable={isCollapsable}
+        isCollapsed={isCollapsed}
+        snapName={snapName}
+        type={DelineatorType.Error}
+        onClick={onClick}
+        boxProps={boxProps}
+      >
         <Text variant={TextVariant.bodySm} marginBottom={4}>
           {t('snapsUIError', [<b key="0">{snapName}</b>])}
         </Text>
@@ -103,7 +142,14 @@ export const SnapUIRenderer = ({
   const sections = mapToTemplate(data, elementKeyIndex);
 
   return (
-    <SnapDelineator snapName={snapName} type={delineatorType}>
+    <SnapDelineator
+      snapName={snapName}
+      type={delineatorType}
+      isCollapsable={isCollapsable}
+      isCollapsed={isCollapsed}
+      onClick={onClick}
+      boxProps={boxProps}
+    >
       <Box className="snap-ui-renderer__content">
         <MetaMaskTemplateRenderer sections={sections} />
       </Box>
@@ -115,4 +161,9 @@ SnapUIRenderer.propTypes = {
   snapId: PropTypes.string,
   delineatorType: PropTypes.string,
   data: PropTypes.object,
+  isCollapsable: PropTypes.bool,
+  isCollapsed: PropTypes.bool,
+  isLoading: PropTypes.bool,
+  onClick: PropTypes.func,
+  boxProps: PropTypes.object,
 };

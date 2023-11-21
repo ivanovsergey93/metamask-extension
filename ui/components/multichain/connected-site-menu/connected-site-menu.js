@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import { useSelector } from 'react-redux';
 import {
   STATUS_CONNECTED_TO_ANOTHER_ACCOUNT,
+  STATUS_CONNECTED_TO_SNAP,
   STATUS_NOT_CONNECTED,
 } from '../../../helpers/constants/connected-sites';
 import {
@@ -11,17 +12,17 @@ import {
   BackgroundColor,
   BorderColor,
   BorderRadius,
-  DISPLAY,
+  Display,
   IconColor,
   JustifyContent,
 } from '../../../helpers/constants/design-system';
 import {
   BadgeWrapper,
+  Box,
   Icon,
   IconName,
   IconSize,
 } from '../../component-library';
-import Box from '../../ui/box';
 import { getSelectedIdentity } from '../../../selectors';
 import Tooltip from '../../ui/tooltip';
 import { useI18nContext } from '../../../hooks/useI18nContext';
@@ -35,13 +36,16 @@ export const ConnectedSiteMenu = ({
 }) => {
   const t = useI18nContext();
   const selectedAccount = useSelector(getSelectedIdentity);
+  const isConnectedtoOtherAccountOrSnap =
+    status === STATUS_CONNECTED_TO_ANOTHER_ACCOUNT ||
+    status === STATUS_CONNECTED_TO_SNAP;
   return (
     <Box
       className={classNames('multichain-connected-site-menu', className)}
       data-testid="connection-menu"
       as="button"
       onClick={onClick}
-      display={DISPLAY.FLEX}
+      display={Display.Flex}
       alignItems={AlignItems.center}
       justifyContent={JustifyContent.center}
       backgroundColor={BackgroundColor.backgroundDefault}
@@ -57,27 +61,23 @@ export const ConnectedSiteMenu = ({
       >
         <BadgeWrapper
           positionObj={
-            status === STATUS_CONNECTED_TO_ANOTHER_ACCOUNT
+            isConnectedtoOtherAccountOrSnap
               ? { bottom: 4, right: -1, zIndex: 1 }
               : { bottom: 2, right: -4, zIndex: 1 }
           }
           badge={
             <Box
               backgroundColor={globalMenuColor}
-              className={`multichain-connected-site-menu__badge ${
-                status === STATUS_CONNECTED_TO_ANOTHER_ACCOUNT
-                  ? 'not-connected'
-                  : ''
-              }`}
+              className={classNames('multichain-connected-site-menu__badge', {
+                'not-connected': isConnectedtoOtherAccountOrSnap,
+              })}
               borderRadius={BorderRadius.full}
               borderColor={
-                status === STATUS_CONNECTED_TO_ANOTHER_ACCOUNT
+                isConnectedtoOtherAccountOrSnap
                   ? BorderColor.successDefault
                   : BackgroundColor.backgroundDefault
               }
-              borderWidth={
-                status === STATUS_CONNECTED_TO_ANOTHER_ACCOUNT ? 2 : 3
-              }
+              borderWidth={isConnectedtoOtherAccountOrSnap ? 2 : 3}
             />
           }
         >

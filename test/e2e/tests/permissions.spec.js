@@ -18,7 +18,7 @@ describe('Permissions', function () {
         dapp: true,
         fixtures: new FixtureBuilder().build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
       },
       async ({ driver, ganacheServer }) => {
         const addresses = await ganacheServer.getAccounts();
@@ -55,7 +55,7 @@ describe('Permissions', function () {
         await driver.clickElement(
           '[data-testid="account-options-menu-button"]',
         );
-        await driver.clickElement('.menu-item');
+        await driver.clickElement('.menu-item:nth-of-type(3)');
 
         await driver.findElement({
           text: 'Connected sites',
