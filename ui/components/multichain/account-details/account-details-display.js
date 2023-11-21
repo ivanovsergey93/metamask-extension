@@ -13,9 +13,9 @@ import {
 } from '../../../selectors';
 import { isAbleToExportAccount } from '../../../helpers/utils/util';
 import {
-  ButtonSecondarySize,
-  ButtonSecondary,
   Box,
+  ButtonSecondary,
+  ButtonSecondarySize,
 } from '../../component-library';
 import {
   AlignItems,
@@ -43,7 +43,7 @@ export const AccountDetailsDisplay = ({
 
   const keyrings = useSelector(getMetaMaskKeyrings);
   const keyring = keyrings.find((kr) => kr.accounts.includes(address));
-  const exportPrivateKeyFeatureEnabled = isAbleToExportAccount(keyring?.type);
+  const exportPrivateKeyFeatureEnabled = false;
 
   const chainId = useSelector(getCurrentChainId);
   const deviceName = useSelector(getHardwareWalletType);
@@ -71,26 +71,7 @@ export const AccountDetailsDisplay = ({
         accounts={accounts}
       />
       <QrView Qr={{ data: address }} />
-      {exportPrivateKeyFeatureEnabled ? (
-        <ButtonSecondary
-          block
-          size={ButtonSecondarySize.Lg}
-          variant={TextVariant.bodyMd}
-          onClick={() => {
-            trackEvent({
-              category: MetaMetricsEventCategory.Accounts,
-              event: MetaMetricsEventName.KeyExportSelected,
-              properties: {
-                key_type: MetaMetricsEventKeyType.Pkey,
-                location: 'Account Details Modal',
-              },
-            });
-            onExportClick();
-          }}
-        >
-          {t('showPrivateKey')}
-        </ButtonSecondary>
-      ) : null}
+        {null}
     </Box>
   );
 };

@@ -8,7 +8,7 @@ const { difference } = require('lodash');
 const createStaticServer = require('../../development/create-static-server');
 const { tEn } = require('../lib/i18n-helpers');
 const { setupMocking } = require('./mock-e2e');
-const Ganache = require('./ganache');
+const { Ganache } = require('./ganache');
 const FixtureServer = require('./fixture-server');
 const PhishingWarningPageServer = require('./phishing-warning-page-server');
 const { buildWebDriver } = require('./webdriver');
@@ -149,6 +149,8 @@ async function withFixtures(options, testSuite) {
       });
     }
 
+    console.log(`\nExecuting testcase: ${title}\n`);
+
     await testSuite({
       driver: driverProxy ?? driver,
       contractRegistry,
@@ -156,6 +158,10 @@ async function withFixtures(options, testSuite) {
       secondaryGanacheServer,
       mockedEndpoint,
     });
+
+    // At this point the suite has executed successfully, so we can log out a success message
+    // (Note: a Chrome browser error will unfortunately pop up after this success message)
+    console.log(`\nSuccess on testcase: '${title}'\n`);
 
     // Evaluate whether any new hosts received network requests during E2E test
     // suite execution. If so, fail the test unless the
@@ -199,7 +205,7 @@ async function withFixtures(options, testSuite) {
     failed = true;
     if (webDriver) {
       try {
-        await driver.verboseReportOnFailure(title);
+        await driver.verboseReportOnFailure(title, error);
       } catch (verboseReportError) {
         console.error(verboseReportError);
       }

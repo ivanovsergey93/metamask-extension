@@ -10,6 +10,7 @@ const {
   WebElement, // eslint-disable-line no-unused-vars -- this is imported for JSDoc
 } = require('selenium-webdriver');
 const cssToXPath = require('css-to-xpath');
+const { sprintf } = require('sprintf-js');
 const { retry } = require('../../../development/lib/retry');
 
 const PAGES = {
@@ -520,7 +521,17 @@ class Driver {
 
   // Error handling
 
-  async verboseReportOnFailure(title) {
+  async verboseReportOnFailure(title, error) {
+    if (process.env.CIRCLECI) {
+      console.error(
+        `Failure in ${title}, for more information see the artifacts tab in CI\n`,
+      );
+    } else {
+      console.error(
+        `Failure in ${title}, for more information see the test-artifacts folder\n`,
+      );
+    }
+    console.error(`${error}\n`);
     const artifactDir = `./test-artifacts/${this.browser}/${title}`;
     const filepathBase = `${artifactDir}/test-failure`;
     await fs.mkdir(artifactDir, { recursive: true });
@@ -583,13 +594,23 @@ class Driver {
           (err) => err.description !== undefined,
         );
 
-        const [eventDescription] = eventDescriptions;
-        const ignore = ignoredErrorMessages.some((message) =>
-          eventDescription?.description.includes(message),
-        );
-        if (!ignore) {
-          errors.push(eventDescription?.description);
-          logBrowserError(failOnConsoleError, eventDescription?.description);
+        // If we received an SES_UNHANDLED_REJECTION from Chrome, eventDescriptions.length will be nonzero
+        if (eventDescriptions.length !== 0) {
+          const [eventDescription] = eventDescriptions;
+          const ignore = ignoredErrorMessages.some((message) =>
+            eventDescription?.description.includes(message),
+          );
+          if (!ignore) {
+            errors.push(eventDescription?.description);
+            logBrowserError(failOnConsoleError, eventDescription?.description);
+          }
+        } else if (event.args.length !== 0) {
+          // Extract the values from the array
+          const values = event.args.map((a) => a.value);
+
+          // The values are in the "printf" form of [message, ...substitutions]
+          // so use sprintf to parse
+          logBrowserError(failOnConsoleError, sprintf(...values));
         }
       }
     });
@@ -597,10 +618,15 @@ class Driver {
 }
 
 function logBrowserError(failOnConsoleError, errorMessage) {
+  console.error('\n----Received an error from Chrome----');
+  console.error(errorMessage);
+  console.error('---------End of Chrome error---------');
+
   if (failOnConsoleError) {
+    console.error('-----failOnConsoleError is true------\n');
     throw new Error(errorMessage);
   } else {
-    console.error(new Error(errorMessage));
+    console.error('-----failOnConsoleError is false-----\n');
   }
 }
 
