@@ -331,66 +331,6 @@ export default function RevealSeedPage() {
       paddingRight={4}
       gap={4}
     >
-      <Text variant={TextVariant.headingLg}>{t('secretRecoveryPhrase')}</Text>
-      <Text variant={TextVariant.bodyMd}>
-        {t('revealSeedWordsDescription1', [
-          <Button
-            key="srp-learn-srp"
-            variant={BUTTON_VARIANT.LINK}
-            size={BUTTON_SIZES.INHERIT}
-            as="a"
-            href={ZENDESK_URLS.SECRET_RECOVERY_PHRASE}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t('revealSeedWordsSRPName')}
-          </Button>,
-          <Text
-            key="reveal-seed-word-part-3"
-            variant={TextVariant.bodyMdBold}
-            as="strong"
-          >
-            {t('revealSeedWordsDescription3')}
-          </Text>,
-        ])}
-      </Text>
-      <Text variant={TextVariant.bodyMd}>
-        {t('revealSeedWordsDescription2', [
-          <Button
-            key="srp-learn-more-non-custodial"
-            variant={BUTTON_VARIANT.LINK}
-            size={BUTTON_SIZES.INHERIT}
-            as="a"
-            href={ZENDESK_URLS.NON_CUSTODIAL_WALLET}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t('revealSeedWordsNonCustodialWallet')}
-          </Button>,
-        ])}
-      </Text>
-      {renderWarning()}
-      {renderContent()}
-      {renderFooter()}
-      <HoldToRevealModal
-        isOpen={isShowingHoldModal}
-        onClose={() => {
-          trackEvent({
-            category: MetaMetricsEventCategory.Keys,
-            event: MetaMetricsEventName.SrpHoldToRevealCloseClicked,
-            properties: {
-              key_type: MetaMetricsEventKeyType.Srp,
-            },
-          });
-          setIsShowingHoldModal(false);
-        }}
-        onLongPressed={() => {
-          setCompletedLongPress(true);
-          setIsShowingHoldModal(false);
-          setScreen(REVEAL_SEED_SCREEN);
-        }}
-        holdToRevealType="SRP"
-      />
     </Box>
   );
 }
