@@ -164,6 +164,7 @@ export enum IconColor {
   lineaMainnetInverse = 'linea-mainnet-inverse',
   goerliInverse = 'goerli-inverse',
   sepoliaInverse = 'sepolia-inverse',
+  transparent = 'transparent',
 }
 
 export enum TypographyVariant {
@@ -374,6 +375,7 @@ export const FRACTIONS = {
 };
 
 export enum BlockSize {
+  Zero = '0',
   Half = '1/2',
   OneThird = '1/3',
   TwoThirds = '2/3',

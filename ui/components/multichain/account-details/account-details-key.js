@@ -2,10 +2,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   BannerAlert,
+  Box,
   ButtonIcon,
   ButtonPrimary,
   IconName,
-  Box,
   Text,
 } from '../../component-library';
 
@@ -45,7 +45,11 @@ export const AccountDetailsKey = ({ accountName, onClose, privateKey }) => {
         padding={4}
         gap={4}
       >
-        <Text variant={TextVariant.bodySm} style={{ wordBreak: 'break-word' }}>
+        <Text
+          data-testid="account-details-key"
+          variant={TextVariant.bodySm}
+          style={{ wordBreak: 'break-word' }}
+        >
           {privateKey}
         </Text>
         <ButtonIcon
@@ -64,7 +68,16 @@ export const AccountDetailsKey = ({ accountName, onClose, privateKey }) => {
 };
 
 AccountDetailsKey.propTypes = {
+  /**
+   * Name of the account
+   */
   accountName: PropTypes.string.isRequired,
+  /**
+   * Executes upon Close button click
+   */
   onClose: PropTypes.func.isRequired,
+  /**
+   * The private key
+   */
   privateKey: PropTypes.string.isRequired,
 };

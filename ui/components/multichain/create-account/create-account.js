@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import {
+  Box,
   ButtonPrimary,
   ButtonSecondary,
   FormTextField,
-  Box,
 } from '../../component-library';
 import { useI18nContext } from '../../../hooks/useI18nContext';
 import { getAccountNameErrorMessage } from '../../../helpers/utils/accounts';
@@ -39,11 +39,12 @@ export const CreateAccount = ({ onActionComplete }) => {
   const defaultAccountName = t('newAccountNumberName', [newAccountNumber]);
 
   const [newAccountName, setNewAccountName] = useState('');
+  const trimmedAccountName = newAccountName.trim();
 
   const { isValidAccountName, errorMessage } = getAccountNameErrorMessage(
     accounts,
     { t },
-    newAccountName,
+    trimmedAccountName || defaultAccountName,
     defaultAccountName,
   );
 
@@ -58,7 +59,7 @@ export const CreateAccount = ({ onActionComplete }) => {
     event.preventDefault();
 
     try {
-      await onCreateAccount(newAccountName || defaultAccountName);
+      await onCreateAccount(trimmedAccountName || defaultAccountName);
       onActionComplete(true);
       trackEvent({
         category: MetaMetricsEventCategory.Accounts,
@@ -109,5 +110,8 @@ export const CreateAccount = ({ onActionComplete }) => {
 };
 
 CreateAccount.propTypes = {
+  /**
+   * Executes when the Create button is clicked
+   */
   onActionComplete: PropTypes.func.isRequired,
 };

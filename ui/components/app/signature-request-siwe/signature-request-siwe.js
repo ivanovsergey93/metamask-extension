@@ -1,4 +1,11 @@
-import React, { useCallback, useContext, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+  useEffect,
+  ///: END:ONLY_INCLUDE_IN
+  useState,
+} from 'react';
 import PropTypes from 'prop-types';
 import { useSelector, useDispatch } from 'react-redux';
 import { useHistory } from 'react-router-dom';
@@ -38,6 +45,15 @@ import {
 import SecurityProviderBannerMessage from '../security-provider-banner-message/security-provider-banner-message';
 import ConfirmPageContainerNavigation from '../confirm-page-container/confirm-page-container-navigation';
 import { getMostRecentOverviewPage } from '../../../ducks/history/history';
+///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+import BlockaidBannerAlert from '../security-provider-banner-alert/blockaid-banner-alert/blockaid-banner-alert';
+import { getBlockaidMetricsParams } from '../../../helpers/utils/metrics';
+import { MetaMetricsContext } from '../../../contexts/metametrics';
+import {
+  MetaMetricsEventCategory,
+  MetaMetricsEventName,
+} from '../../../../shared/constants/metametrics';
+///: END:ONLY_INCLUDE_IN
 import LedgerInstructionField from '../ledger-instruction-field';
 
 import SignatureRequestHeader from '../signature-request-header';
@@ -53,6 +69,28 @@ export default function SignatureRequestSIWE({ txData }) {
   const messagesCount = useSelector(getTotalUnapprovedMessagesCount);
   const messagesList = useSelector(unconfirmedMessagesHashSelector);
   const mostRecentOverviewPage = useSelector(getMostRecentOverviewPage);
+  ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+  const trackEvent = useContext(MetaMetricsContext);
+  ///: END:ONLY_INCLUDE_IN
+
+  ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+  useEffect(() => {
+    if (txData.securityAlertResponse) {
+      const blockaidMetricsParams = getBlockaidMetricsParams(
+        txData.securityAlertResponse,
+      );
+
+      trackEvent({
+        category: MetaMetricsEventCategory.Transactions,
+        event: MetaMetricsEventName.SignatureRequested,
+        properties: {
+          action: 'Sign Request',
+          ...blockaidMetricsParams,
+        },
+      });
+    }
+  }, [txData?.securityAlertResponse]);
+  ///: END:ONLY_INCLUDE_IN
 
   const {
     msgParams: {
@@ -101,7 +139,7 @@ export default function SignatureRequestSIWE({ txData }) {
     } catch (e) {
       log.error(e);
     }
-  }, []);
+  }, [dispatch, id]);
 
   const handleCancelAll = () => {
     const unapprovedTxCount = messagesCount;
@@ -127,19 +165,27 @@ export default function SignatureRequestSIWE({ txData }) {
         <ConfirmPageContainerNavigation />
       </div>
       <SignatureRequestHeader txData={txData} />
-      <Header
-        fromAccount={fromAccount}
-        domain={origin}
-        isSIWEDomainValid={isSIWEDomainValid}
-        subjectMetadata={targetSubjectMetadata}
-      />
 
+      {
+        ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+        <BlockaidBannerAlert
+          securityAlertResponse={txData?.securityAlertResponse}
+          margin={4}
+        />
+        ///: END:ONLY_INCLUDE_IN
+      }
       {showSecurityProviderBanner && (
         <SecurityProviderBannerMessage
           securityProviderResponse={txData.securityProviderResponse}
         />
       )}
 
+      <Header
+        fromAccount={fromAccount}
+        domain={origin}
+        isSIWEDomainValid={isSIWEDomainValid}
+        subjectMetadata={targetSubjectMetadata}
+      />
       <Message data={formatMessageParams(parsedMessage, t)} />
       {!isMatchingAddress && (
         <BannerAlert
@@ -154,13 +200,11 @@ export default function SignatureRequestSIWE({ txData }) {
           ])}
         </BannerAlert>
       )}
-
       {isLedgerWallet && (
         <div className="confirm-approve-content__ledger-instruction-wrapper">
           <LedgerInstructionField showDataInstruction />
         </div>
       )}
-
       {!isSIWEDomainValid && (
         <BannerAlert
           severity={SEVERITIES.DANGER}

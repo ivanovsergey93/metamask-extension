@@ -14,7 +14,7 @@ export enum AvatarBaseSize {
   Xl = 'xl',
 }
 
-export interface Props extends TextStyleUtilityProps {
+export interface AvatarBaseStyleUtilityProps extends TextStyleUtilityProps {
   /**
    * The size of the AvatarBase.
    * Possible values could be 'AvatarBaseSize.Xs'(16px), 'AvatarBaseSize.Sm'(24px),
@@ -25,7 +25,7 @@ export interface Props extends TextStyleUtilityProps {
   /**
    * The children to be rendered inside the AvatarBase
    */
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /**
    * The background color of the AvatarBase
    * Defaults to Color.backgroundAlternative
@@ -48,7 +48,7 @@ export interface Props extends TextStyleUtilityProps {
 }
 
 export type AvatarBaseProps<C extends React.ElementType> =
-  PolymorphicComponentPropWithRef<C, Props>;
+  PolymorphicComponentPropWithRef<C, AvatarBaseStyleUtilityProps>;
 
 export type AvatarBaseComponent = <C extends React.ElementType = 'span'>(
   props: AvatarBaseProps<C>,

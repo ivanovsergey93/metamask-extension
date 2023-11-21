@@ -28,8 +28,8 @@ import {
   Size,
   ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
   IconColor,
-  DISPLAY,
-  BLOCK_SIZES,
+  Display,
+  BlockSize,
   TextVariant,
   BackgroundColor,
   ///: END:ONLY_INCLUDE_IN
@@ -37,13 +37,19 @@ import {
 import {
   ButtonLink,
   ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
+  Box,
   Icon,
   IconName,
   Text,
   ///: END:ONLY_INCLUDE_IN
 } from '../../component-library';
-///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
-import Box from '../../ui/box/box';
+///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+import {
+  MetaMetricsEventCategory,
+  MetaMetricsEventName,
+} from '../../../../shared/constants/metametrics';
+import { getBlockaidMetricsParams } from '../../../helpers/utils/metrics';
+import BlockaidBannerAlert from '../security-provider-banner-alert/blockaid-banner-alert/blockaid-banner-alert';
 ///: END:ONLY_INCLUDE_IN
 import ConfirmPageContainerNavigation from '../confirm-page-container/confirm-page-container-navigation';
 import SecurityProviderBannerMessage from '../security-provider-banner-message/security-provider-banner-message';
@@ -57,6 +63,7 @@ import SignatureRequestOriginalWarning from './signature-request-original-warnin
 export default class SignatureRequestOriginal extends Component {
   static contextTypes = {
     t: PropTypes.func.isRequired,
+    trackEvent: PropTypes.func,
   };
 
   static propTypes = {
@@ -64,9 +71,6 @@ export default class SignatureRequestOriginal extends Component {
       address: PropTypes.string.isRequired,
       name: PropTypes.string,
     }).isRequired,
-    clearConfirmTransaction: PropTypes.func.isRequired,
-    history: PropTypes.object.isRequired,
-    mostRecentOverviewPage: PropTypes.string.isRequired,
     txData: PropTypes.object.isRequired,
     subjectMetadata: PropTypes.object,
     hardwareWalletRequiresConnection: PropTypes.bool,
@@ -75,6 +79,9 @@ export default class SignatureRequestOriginal extends Component {
     showRejectTransactionsConfirmationModal: PropTypes.func.isRequired,
     cancelAllApprovals: PropTypes.func.isRequired,
     rejectPendingApproval: PropTypes.func.isRequired,
+    clearConfirmTransaction: PropTypes.func.isRequired,
+    history: PropTypes.object.isRequired,
+    mostRecentOverviewPage: PropTypes.string.isRequired,
     resolvePendingApproval: PropTypes.func.isRequired,
     completedTx: PropTypes.func.isRequired,
     ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
@@ -88,6 +95,26 @@ export default class SignatureRequestOriginal extends Component {
   state = {
     showSignatureRequestWarning: false,
   };
+
+  ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+  componentDidMount() {
+    const { txData } = this.props;
+    if (txData.securityAlertResponse) {
+      const blockaidMetricsParams = getBlockaidMetricsParams(
+        txData.securityAlertResponse,
+      );
+
+      this.context.trackEvent({
+        category: MetaMetricsEventCategory.Transactions,
+        event: MetaMetricsEventName.SignatureRequested,
+        properties: {
+          action: 'Sign Request',
+          ...blockaidMetricsParams,
+        },
+      });
+    }
+  }
+  ///: END:ONLY_INCLUDE_IN
 
   msgHexToText = (hex) => {
     try {
@@ -150,20 +177,27 @@ export default class SignatureRequestOriginal extends Component {
 
     return (
       <div className="request-signature__body">
+        {
+          ///: BEGIN:ONLY_INCLUDE_IN(blockaid)
+          <BlockaidBannerAlert
+            securityAlertResponse={txData?.securityAlertResponse}
+            margin={4}
+          />
+          ///: END:ONLY_INCLUDE_IN
+        }
         {isSuspiciousResponse(txData?.securityProviderResponse) && (
           <SecurityProviderBannerMessage
             securityProviderResponse={txData.securityProviderResponse}
           />
         )}
-
         {
           ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
           this.props.selectedAccount.address ===
           this.props.fromAccount.address ? null : (
             <Box
               className="request-signature__mismatch-info"
-              display={DISPLAY.FLEX}
-              width={BLOCK_SIZES.FULL}
+              Display={Display.Flex}
+              width={BlockSize.Full}
               padding={4}
               marginBottom={4}
               backgroundColor={BackgroundColor.primaryMuted}
@@ -183,7 +217,6 @@ export default class SignatureRequestOriginal extends Component {
           )
           ///: END:ONLY_INCLUDE_IN
         }
-
         <div className="request-signature__origin">
           {
             // Use legacy authorship header for snaps
@@ -211,7 +244,6 @@ export default class SignatureRequestOriginal extends Component {
             ///: END:ONLY_INCLUDE_IN
           }
         </div>
-
         <Typography
           className="request-signature__content__title"
           variant={TypographyVariant.H3}
@@ -229,7 +261,6 @@ export default class SignatureRequestOriginal extends Component {
         >
           {this.context.t('signatureRequestGuidance')}
         </Typography>
-
         <div className={classnames('request-signature__notice')}>{notice}</div>
         <div className="request-signature__rows">
           {rows.map(({ name, value }, index) => {
@@ -258,11 +289,11 @@ export default class SignatureRequestOriginal extends Component {
 
   onSubmit = async () => {
     const {
+      resolvePendingApproval,
+      completedTx,
       clearConfirmTransaction,
       history,
       mostRecentOverviewPage,
-      resolvePendingApproval,
-      completedTx,
       txData,
     } = this.props;
     ///: BEGIN:ONLY_INCLUDE_IN(build-mmi)
@@ -272,12 +303,10 @@ export default class SignatureRequestOriginal extends Component {
     }
     ///: END:ONLY_INCLUDE_IN
 
-    ///: BEGIN:ONLY_INCLUDE_IN(build-main,build-beta,build-flask)
     await resolvePendingApproval(txData.id);
     completedTx(txData.id);
     clearConfirmTransaction();
     history.push(mostRecentOverviewPage);
-    ///: END:ONLY_INCLUDE_IN
   };
 
   onCancel = async () => {
@@ -332,11 +361,9 @@ export default class SignatureRequestOriginal extends Component {
             }
             ///: END:ONLY_INCLUDE_IN
 
-            ///: BEGIN:ONLY_INCLUDE_IN(build-main,build-beta,build-flask)
             await resolvePendingApproval(txData.id);
             clearConfirmTransaction();
             history.push(mostRecentOverviewPage);
-            ///: END:ONLY_INCLUDE_IN
           }
         }}
         disabled={

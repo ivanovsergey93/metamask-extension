@@ -17,13 +17,13 @@ describe('Incremental Security', function () {
       },
     ],
   };
-  it('Back up Secret Recovery Phrase from backup reminder', async function () {
+  it('Back up Secret Recovery Phrase from backup reminder @no-mmi', async function () {
     await withFixtures(
       {
         dapp: true,
         fixtures: new FixtureBuilder({ onboarding: true }).build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
         failOnConsoleError: false,
         dappPath: 'send-eth-with-private-key-test',
       },
@@ -115,7 +115,7 @@ describe('Incremental Security', function () {
         // should show a backup reminder
         const backupReminder = await driver.findElements({
           xpath:
-            "//div[contains(@class, 'home-notification__text') and contains(text(), 'Backup your Secret Recovery Phrase to keep your wallet and funds secure')]",
+            "//div[contains(@class, 'home-notification__text') and contains(text(), 'Back up your Secret Recovery Phrase to keep your wallet and funds secure')]",
         });
         assert.equal(backupReminder.length, 1);
 

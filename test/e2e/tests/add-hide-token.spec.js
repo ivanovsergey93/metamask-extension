@@ -43,7 +43,7 @@ describe('Hide token', function () {
           })
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
       },
       async ({ driver }) => {
         await driver.navigate();
@@ -100,7 +100,7 @@ describe('Add existing token using search', function () {
           .withPreferencesController({ useTokenDetection: true })
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
       },
       async ({ driver }) => {
         await driver.navigate();
@@ -108,13 +108,15 @@ describe('Add existing token using search', function () {
         await driver.press('#password', driver.Key.ENTER);
 
         await driver.clickElement({ text: 'Import tokens', tag: 'button' });
-        await driver.fill('#search-tokens', 'BAT');
+        await driver.fill('input[placeholder="Search"]', 'BAT');
         await driver.clickElement({
           text: 'BAT',
           tag: 'span',
         });
         await driver.clickElement({ text: 'Next', tag: 'button' });
-        await driver.clickElement({ text: 'Import tokens', tag: 'button' });
+        await driver.clickElement(
+          '[data-testid="import-tokens-modal-import-button"]',
+        );
 
         await driver.waitForSelector({
           css: '.token-overview__primary-balance',
@@ -144,7 +146,7 @@ describe('Add token using wallet_watchAsset', function () {
           .withPermissionControllerConnectedToTestDapp()
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
       },
       async ({ driver }) => {
         await driver.navigate();
@@ -197,7 +199,7 @@ describe('Add token using wallet_watchAsset', function () {
           .withPermissionControllerConnectedToTestDapp()
           .build(),
         ganacheOptions,
-        title: this.test.title,
+        title: this.test.fullTitle(),
       },
       async ({ driver }) => {
         await driver.navigate();

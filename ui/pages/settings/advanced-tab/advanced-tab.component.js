@@ -1,36 +1,33 @@
-import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
-import ToggleButton from '../../../components/ui/toggle-button';
-import TextField from '../../../components/ui/text-field';
-import Button from '../../../components/ui/button';
-import Dropdown from '../../../components/ui/dropdown';
-import Dialog from '../../../components/ui/dialog';
-
-import { getPlatform } from '../../../../app/scripts/lib/util';
-
-import { PLATFORM_FIREFOX } from '../../../../shared/constants/app';
-import {
-  getNumberOfSettingsInSection,
-  handleSettingsRefs,
-} from '../../../helpers/utils/settings-search';
-
-import {
-  LedgerTransportTypes,
-  LEDGER_USB_VENDOR_ID,
-} from '../../../../shared/constants/hardware-wallets';
+import React, { PureComponent } from 'react';
 import {
   MetaMetricsEventCategory,
   MetaMetricsEventName,
 } from '../../../../shared/constants/metametrics';
 import { DEFAULT_AUTO_LOCK_TIME_LIMIT } from '../../../../shared/constants/preferences';
-import { exportAsFile } from '../../../helpers/utils/export-utils';
-import ActionableMessage from '../../../components/ui/actionable-message';
-import ZENDESK_URLS from '../../../helpers/constants/zendesk-url';
-import { BannerAlert } from '../../../components/component-library';
 import {
-  SEVERITIES,
+  BannerAlert,
+  BannerAlertSeverity,
+  Box,
+} from '../../../components/component-library';
+import Button from '../../../components/ui/button';
+import TextField from '../../../components/ui/text-field';
+import ToggleButton from '../../../components/ui/toggle-button';
+import {
+  Display,
+  FlexDirection,
+  JustifyContent,
+  Severity,
   TextVariant,
 } from '../../../helpers/constants/design-system';
+import {
+  ExportableContentType,
+  exportAsFile,
+} from '../../../helpers/utils/export-utils';
+import {
+  getNumberOfSettingsInSection,
+  handleSettingsRefs,
+} from '../../../helpers/utils/settings-search';
 
 const CORRUPT_JSON_FILE = 'CORRUPT_JSON_FILE';
 
@@ -55,27 +52,20 @@ export default class AdvancedTab extends PureComponent {
     setAutoLockTimeLimit: PropTypes.func.isRequired,
     setShowFiatConversionOnTestnetsPreference: PropTypes.func.isRequired,
     setShowTestNetworks: PropTypes.func.isRequired,
-    ledgerTransportType: PropTypes.oneOf(Object.values(LedgerTransportTypes)),
-    setLedgerTransportPreference: PropTypes.func.isRequired,
     setDismissSeedBackUpReminder: PropTypes.func.isRequired,
     dismissSeedBackUpReminder: PropTypes.bool.isRequired,
-    userHasALedgerAccount: PropTypes.bool.isRequired,
     backupUserData: PropTypes.func.isRequired,
     restoreUserData: PropTypes.func.isRequired,
     setDisabledRpcMethodPreference: PropTypes.func.isRequired,
     disabledRpcMethodPreferences: PropTypes.shape({
       eth_sign: PropTypes.bool.isRequired,
     }),
-    ///: BEGIN:ONLY_INCLUDE_IN(desktop)
-    desktopEnabled: PropTypes.bool,
-    ///: END:ONLY_INCLUDE_IN
   };
 
   state = {
     autoLockTimeLimit: this.props.autoLockTimeLimit,
     autoLockTimeLimitBeforeNormalization: this.props.autoLockTimeLimit,
     lockTimeError: '',
-    showLedgerTransportWarning: false,
     showResultMessage: false,
     restoreSuccessful: true,
     restoreMessage: null,
@@ -150,7 +140,7 @@ export default class AdvancedTab extends PureComponent {
 
   backupUserData = async () => {
     const { fileName, data } = await this.props.backupUserData();
-    exportAsFile(fileName, data);
+    exportAsFile(fileName, data, ExportableContentType.JSON);
 
     this.context.trackEvent({
       event: 'User Data Exported',
@@ -164,9 +154,11 @@ export default class AdvancedTab extends PureComponent {
     const { displayWarning } = this.props;
 
     return (
-      <div
-        ref={this.settingsRefs[0]}
+      <Box
         className="settings-page__content-row"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Column}
+        ref={this.settingsRefs[0]}
         data-testid="advanced-setting-state-logs"
       >
         <div className="settings-page__content-item">
@@ -185,7 +177,11 @@ export default class AdvancedTab extends PureComponent {
                   if (err) {
                     displayWarning(t('stateLogError'));
                   } else {
-                    exportAsFile(`${t('stateLogFileName')}.json`, result);
+                    exportAsFile(
+                      `${t('stateLogFileName')}.json`,
+                      result,
+                      ExportableContentType.JSON,
+                    );
                   }
                 });
               }}
@@ -194,7 +190,7 @@ export default class AdvancedTab extends PureComponent {
             </Button>
           </div>
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -203,9 +199,11 @@ export default class AdvancedTab extends PureComponent {
     const { showResetAccountConfirmationModal } = this.props;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[1]}
         className="settings-page__content-row"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Column}
         data-testid="advanced-setting-reset-account"
       >
         <div className="settings-page__content-item">
@@ -234,7 +232,7 @@ export default class AdvancedTab extends PureComponent {
             </Button>
           </div>
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -243,9 +241,13 @@ export default class AdvancedTab extends PureComponent {
     const { sendHexData, setHexDataFeatureFlag } = this.props;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[2]}
         className="settings-page__content-row"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Row}
+        justifyContent={JustifyContent.spaceBetween}
+        gap={4}
         data-testid="advanced-setting-hex-data"
       >
         <div className="settings-page__content-item">
@@ -254,17 +256,15 @@ export default class AdvancedTab extends PureComponent {
             {t('showHexDataDescription')}
           </div>
         </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={sendHexData}
-              onToggle={(value) => setHexDataFeatureFlag(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
-            />
-          </div>
+        <div className="settings-page__content-item-col">
+          <ToggleButton
+            value={sendHexData}
+            onToggle={(value) => setHexDataFeatureFlag(!value)}
+            offLabel={t('off')}
+            onLabel={t('on')}
+          />
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -274,9 +274,13 @@ export default class AdvancedTab extends PureComponent {
       this.props;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[3]}
         className="settings-page__content-row"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Row}
+        justifyContent={JustifyContent.spaceBetween}
+        gap={4}
         data-testid="advanced-setting-show-testnet-conversion"
       >
         <div className="settings-page__content-item">
@@ -285,19 +289,18 @@ export default class AdvancedTab extends PureComponent {
             {t('showFiatConversionInTestnetsDescription')}
           </div>
         </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={showFiatInTestnets}
-              onToggle={(value) =>
-                setShowFiatConversionOnTestnetsPreference(!value)
-              }
-              offLabel={t('off')}
-              onLabel={t('on')}
-            />
-          </div>
+
+        <div className="settings-page__content-item-col">
+          <ToggleButton
+            value={showFiatInTestnets}
+            onToggle={(value) =>
+              setShowFiatConversionOnTestnetsPreference(!value)
+            }
+            offLabel={t('off')}
+            onLabel={t('on')}
+          />
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -306,10 +309,14 @@ export default class AdvancedTab extends PureComponent {
     const { showTestNetworks, setShowTestNetworks } = this.props;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[4]}
         className="settings-page__content-row"
         data-testid="advanced-setting-show-testnet-conversion"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Row}
+        justifyContent={JustifyContent.spaceBetween}
+        gap={4}
       >
         <div className="settings-page__content-item">
           <span>{t('showTestnetNetworks')}</span>
@@ -317,17 +324,16 @@ export default class AdvancedTab extends PureComponent {
             {t('showTestnetNetworksDescription')}
           </div>
         </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={showTestNetworks}
-              onToggle={(value) => setShowTestNetworks(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
-            />
-          </div>
+
+        <div className="settings-page__content-item-col">
+          <ToggleButton
+            value={showTestNetworks}
+            onToggle={(value) => setShowTestNetworks(!value)}
+            offLabel={t('off')}
+            onLabel={t('on')}
+          />
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -336,10 +342,14 @@ export default class AdvancedTab extends PureComponent {
     const { useNonceField, setUseNonceField } = this.props;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[5]}
         className="settings-page__content-row"
         data-testid="advanced-setting-custom-nonce"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Row}
+        justifyContent={JustifyContent.spaceBetween}
+        gap={4}
       >
         <div className="settings-page__content-item">
           <span>{t('nonceField')}</span>
@@ -347,17 +357,16 @@ export default class AdvancedTab extends PureComponent {
             {t('nonceFieldDescription')}
           </div>
         </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={useNonceField}
-              onToggle={(value) => setUseNonceField(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
-            />
-          </div>
+
+        <div className="settings-page__content-item-col">
+          <ToggleButton
+            value={useNonceField}
+            onToggle={(value) => setUseNonceField(!value)}
+            offLabel={t('off')}
+            onLabel={t('on')}
+          />
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -367,10 +376,12 @@ export default class AdvancedTab extends PureComponent {
     const { setAutoLockTimeLimit } = this.props;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[6]}
         className="settings-page__content-row"
         data-testid="advanced-setting-auto-lock"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Column}
       >
         <div className="settings-page__content-item">
           <span>{t('autoLockTimeLimit')}</span>
@@ -404,113 +415,7 @@ export default class AdvancedTab extends PureComponent {
             </Button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  renderLedgerLiveControl() {
-    const { t } = this.context;
-    const {
-      ledgerTransportType,
-      setLedgerTransportPreference,
-      userHasALedgerAccount,
-      ///: BEGIN:ONLY_INCLUDE_IN(desktop)
-      desktopEnabled,
-      ///: END:ONLY_INCLUDE_IN
-    } = this.props;
-
-    ///: BEGIN:ONLY_INCLUDE_IN(desktop)
-    if (desktopEnabled) {
-      return null;
-    }
-    ///: END:ONLY_INCLUDE_IN
-
-    const LEDGER_TRANSPORT_NAMES = {
-      LIVE: t('ledgerLive'),
-      WEBHID: t('webhid'),
-      U2F: t('u2f'),
-    };
-
-    const transportTypeOptions = [
-      {
-        name: LEDGER_TRANSPORT_NAMES.LIVE,
-        value: LedgerTransportTypes.live,
-      },
-      {
-        name: LEDGER_TRANSPORT_NAMES.U2F,
-        value: LedgerTransportTypes.u2f,
-      },
-    ];
-
-    if (window.navigator.hid) {
-      transportTypeOptions.push({
-        name: LEDGER_TRANSPORT_NAMES.WEBHID,
-        value: LedgerTransportTypes.webhid,
-      });
-    }
-
-    const recommendedLedgerOption = window.navigator.hid
-      ? LEDGER_TRANSPORT_NAMES.WEBHID
-      : LEDGER_TRANSPORT_NAMES.U2F;
-
-    return (
-      <div
-        ref={this.settingsRefs[7]}
-        className="settings-page__content-row"
-        data-testId="ledger-live-control"
-      >
-        <div className="settings-page__content-item">
-          <span>{t('preferredLedgerConnectionType')}</span>
-          <div className="settings-page__content-description">
-            {t('ledgerConnectionPreferenceDescription', [
-              recommendedLedgerOption,
-              <Button
-                key="ledger-connection-settings-learn-more"
-                type="link"
-                href={ZENDESK_URLS.HARDWARE_CONNECTION}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="settings-page__inline-link"
-              >
-                {t('learnMore')}
-              </Button>,
-            ])}
-          </div>
-        </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <Dropdown
-              id="select-ledger-transport-type"
-              options={transportTypeOptions}
-              selectedOption={ledgerTransportType}
-              onChange={async (transportType) => {
-                if (
-                  ledgerTransportType === LedgerTransportTypes.live &&
-                  transportType === LedgerTransportTypes.webhid
-                ) {
-                  this.setState({ showLedgerTransportWarning: true });
-                }
-                setLedgerTransportPreference(transportType);
-                if (
-                  transportType === LedgerTransportTypes.webhid &&
-                  userHasALedgerAccount
-                ) {
-                  await window.navigator.hid.requestDevice({
-                    filters: [{ vendorId: LEDGER_USB_VENDOR_ID }],
-                  });
-                }
-              }}
-            />
-            {this.state.showLedgerTransportWarning ? (
-              <Dialog type="message">
-                <div className="settings-page__content-item-dialog">
-                  {t('ledgerTransportChangeWarning')}
-                </div>
-              </Dialog>
-            ) : null}
-          </div>
-        </div>
-      </div>
+      </Box>
     );
   }
 
@@ -520,10 +425,14 @@ export default class AdvancedTab extends PureComponent {
       this.props;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[8]}
         className="settings-page__content-row"
         data-testid="advanced-setting-dismiss-reminder"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Row}
+        justifyContent={JustifyContent.spaceBetween}
+        gap={4}
       >
         <div className="settings-page__content-item">
           <span>{t('dismissReminderField')}</span>
@@ -531,17 +440,16 @@ export default class AdvancedTab extends PureComponent {
             {t('dismissReminderDescriptionField')}
           </div>
         </div>
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              value={dismissSeedBackUpReminder}
-              onToggle={(value) => setDismissSeedBackUpReminder(!value)}
-              offLabel={t('off')}
-              onLabel={t('on')}
-            />
-          </div>
+
+        <div className="settings-page__content-item-col">
+          <ToggleButton
+            value={dismissSeedBackUpReminder}
+            onToggle={(value) => setDismissSeedBackUpReminder(!value)}
+            offLabel={t('off')}
+            onLabel={t('on')}
+          />
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -564,10 +472,12 @@ export default class AdvancedTab extends PureComponent {
       });
     };
     return (
-      <div
+      <Box
         ref={this.settingsRefs[9]}
         className="settings-page__content-row"
         data-testid="advanced-setting-toggle-ethsign"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Column}
       >
         <div className="settings-page__content-item">
           <span>{t('toggleEthSignField')}</span>
@@ -575,30 +485,29 @@ export default class AdvancedTab extends PureComponent {
             {t('toggleEthSignDescriptionField')}
           </div>
         </div>
-
-        {disabledRpcMethodPreferences?.eth_sign === true ? (
+        {disabledRpcMethodPreferences?.eth_sign ? (
           <BannerAlert
-            severity={SEVERITIES.DANGER}
-            marginBottom={5}
+            severity={Severity.Danger}
+            marginTop={3}
+            marginBottom={4}
             descriptionProps={{ variant: TextVariant.bodyMd }}
           >
             {t('toggleEthSignBannerDescription')}
           </BannerAlert>
         ) : null}
-        <div className="settings-page__content-item">
-          <div className="settings-page__content-item-col">
-            <ToggleButton
-              className="eth-sign-toggle"
-              value={disabledRpcMethodPreferences?.eth_sign || false}
-              onToggle={(value) => {
-                value ? toggleOff(value) : showEthSignModal();
-              }}
-              offLabel={t('toggleEthSignOff')}
-              onLabel={t('toggleEthSignOn')}
-            />
-          </div>
+
+        <div className="settings-page__content-item-col">
+          <ToggleButton
+            className="eth-sign-toggle"
+            value={disabledRpcMethodPreferences?.eth_sign || false}
+            onToggle={(value) => {
+              value ? toggleOff(value) : showEthSignModal();
+            }}
+            offLabel={t('toggleEthSignOff')}
+            onLabel={t('toggleEthSignOn')}
+          />
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -643,10 +552,12 @@ export default class AdvancedTab extends PureComponent {
   renderUserDataBackup() {
     const { t } = this.context;
     return (
-      <div
+      <Box
         ref={this.settingsRefs[10]}
         className="settings-page__content-row"
         data-testid="advanced-setting-data-backup"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Column}
       >
         <div className="settings-page__content-item">
           <span>{t('backupUserData')}</span>
@@ -666,7 +577,7 @@ export default class AdvancedTab extends PureComponent {
             </Button>
           </div>
         </div>
-      </div>
+      </Box>
     );
   }
 
@@ -683,10 +594,12 @@ export default class AdvancedTab extends PureComponent {
         : defaultRestoreMessage;
 
     return (
-      <div
+      <Box
         ref={this.settingsRefs[11]}
         className="settings-page__content-row"
         data-testid="advanced-setting-data-restore"
+        display={Display.Flex}
+        flexDirection={FlexDirection.Column}
       >
         <div className="settings-page__content-item">
           <span>{t('restoreUserData')}</span>
@@ -712,30 +625,33 @@ export default class AdvancedTab extends PureComponent {
             />
           </div>
           {showResultMessage && (
-            <ActionableMessage
-              type={restoreSuccessful ? 'success' : 'danger'}
-              message={restoreMessageToRender}
-              primaryActionV2={{
-                label: t('dismiss'),
-                onClick: () => {
-                  this.setState({
-                    showResultMessage: false,
-                    restoreSuccessful: true,
-                    restoreMessage: null,
-                  });
-                },
+            <BannerAlert
+              severity={
+                restoreSuccessful
+                  ? BannerAlertSeverity.Success
+                  : BannerAlertSeverity.Danger
+              }
+              description={restoreMessageToRender}
+              descriptionProps={{
+                'data-testid': 'restore-user-data-banner-alert-description',
+              }}
+              actionButtonLabel={t('dismiss')}
+              actionButtonOnClick={() => {
+                this.setState({
+                  showResultMessage: false,
+                  restoreSuccessful: true,
+                  restoreMessage: null,
+                });
               }}
             />
           )}
         </div>
-      </div>
+      </Box>
     );
   }
 
   render() {
     const { warning } = this.props;
-
-    const notUsingFirefox = getPlatform() !== PLATFORM_FIREFOX;
 
     return (
       <div className="settings-page__body">
@@ -749,7 +665,6 @@ export default class AdvancedTab extends PureComponent {
         {this.renderAutoLockTimeLimit()}
         {this.renderUserDataBackup()}
         {this.renderRestoreUserData()}
-        {notUsingFirefox ? this.renderLedgerLiveControl() : null}
         {this.renderDismissSeedBackupReminderControl()}
         {this.renderToggleEthSignControl()}
       </div>

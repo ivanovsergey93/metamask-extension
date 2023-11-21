@@ -6,10 +6,10 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
     class="confirm-approve-content"
   >
     <div
-      class="box confirm-approve-content__icon-display-content box--display-flex box--flex-direction-row"
+      class="mm-box confirm-approve-content__icon-display-content mm-box--display-flex"
     >
       <div
-        class="box box--display-flex box--flex-direction-row box--align-items-center"
+        class="mm-box mm-box--display-flex mm-box--align-items-center"
       >
         <div
           class=""
@@ -50,7 +50,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
       This allows a third party to access and transfer the following NFTs without further notice until you revoke its access.
     </div>
     <div
-      class="box box--margin-top-2 box--margin-bottom-4 box--flex-direction-row"
+      class="mm-box mm-box--margin-top-2 mm-box--margin-bottom-4"
     >
       <a
         class="button btn-link confirm-approve-content__verify-contract-details"
@@ -73,7 +73,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             class="confirm-approve-content__card-header__symbol"
           >
             <span
-              class="box mm-icon mm-icon--size-md box--display-inline-block box--flex-direction-row box--color-inherit"
+              class="mm-box mm-icon mm-icon--size-md mm-box--display-inline-block mm-box--color-inherit"
               style="mask-image: url('./images/icons/tag.svg');"
             />
           </div>
@@ -83,7 +83,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             Transaction fee
           </div>
           <div
-            class="box box--flex-direction-row box--width-1/6"
+            class="mm-box mm-box--width-1/6"
           >
             <a
               class="button btn-link confirm-approve-content__small-blue-text"
@@ -140,7 +140,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
                 Nonce
               </h6>
               <button
-                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
+                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-0 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
               >
                 Edit
               </button>
@@ -180,10 +180,10 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
     class="confirm-approve-content"
   >
     <div
-      class="box confirm-approve-content__icon-display-content box--display-flex box--flex-direction-row"
+      class="mm-box confirm-approve-content__icon-display-content mm-box--display-flex"
     >
       <div
-        class="box box--display-flex box--flex-direction-row box--align-items-center"
+        class="mm-box mm-box--display-flex mm-box--align-items-center"
       >
         <div
           class=""
@@ -235,7 +235,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
       </span>
     </div>
     <div
-      class="box box--margin-top-2 box--margin-bottom-4 box--flex-direction-row"
+      class="mm-box mm-box--margin-top-2 mm-box--margin-bottom-4"
     >
       <a
         class="button btn-link confirm-approve-content__verify-contract-details"
@@ -258,7 +258,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             class="confirm-approve-content__card-header__symbol"
           >
             <span
-              class="box mm-icon mm-icon--size-md box--display-inline-block box--flex-direction-row box--color-inherit"
+              class="mm-box mm-icon mm-icon--size-md mm-box--display-inline-block mm-box--color-inherit"
               style="mask-image: url('./images/icons/tag.svg');"
             />
           </div>
@@ -268,7 +268,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             Transaction fee
           </div>
           <div
-            class="box box--flex-direction-row box--width-1/6"
+            class="mm-box mm-box--width-1/6"
           >
             <a
               class="button btn-link confirm-approve-content__small-blue-text"
@@ -325,7 +325,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
                 Nonce
               </h6>
               <button
-                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
+                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-0 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
               >
                 Edit
               </button>
@@ -365,10 +365,10 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
     class="confirm-approve-content"
   >
     <div
-      class="box confirm-approve-content__icon-display-content box--display-flex box--flex-direction-row"
+      class="mm-box confirm-approve-content__icon-display-content mm-box--display-flex"
     >
       <div
-        class="box box--display-flex box--flex-direction-row box--align-items-center"
+        class="mm-box mm-box--display-flex mm-box--align-items-center"
       >
         <div
           class=""
@@ -420,7 +420,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
       </span>
     </div>
     <div
-      class="box box--margin-top-2 box--margin-bottom-4 box--flex-direction-row"
+      class="mm-box mm-box--margin-top-2 mm-box--margin-bottom-4"
     >
       <a
         class="button btn-link confirm-approve-content__verify-contract-details"
@@ -443,7 +443,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             class="confirm-approve-content__card-header__symbol"
           >
             <span
-              class="box mm-icon mm-icon--size-md box--display-inline-block box--flex-direction-row box--color-inherit"
+              class="mm-box mm-icon mm-icon--size-md mm-box--display-inline-block mm-box--color-inherit"
               style="mask-image: url('./images/icons/tag.svg');"
             />
           </div>
@@ -453,7 +453,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             Transaction fee
           </div>
           <div
-            class="box box--flex-direction-row box--width-1/6"
+            class="mm-box mm-box--width-1/6"
           >
             <a
               class="button btn-link confirm-approve-content__small-blue-text"
@@ -510,7 +510,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
                 Nonce
               </h6>
               <button
-                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
+                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-0 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
               >
                 Edit
               </button>
@@ -550,10 +550,10 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
     class="confirm-approve-content"
   >
     <div
-      class="box confirm-approve-content__icon-display-content box--display-flex box--flex-direction-row"
+      class="mm-box confirm-approve-content__icon-display-content mm-box--display-flex"
     >
       <div
-        class="box box--display-flex box--flex-direction-row box--align-items-center"
+        class="mm-box mm-box--display-flex mm-box--align-items-center"
       >
         <div
           class=""
@@ -605,7 +605,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
       </span>
     </div>
     <div
-      class="box box--margin-top-2 box--margin-bottom-4 box--flex-direction-row"
+      class="mm-box mm-box--margin-top-2 mm-box--margin-bottom-4"
     >
       <a
         class="button btn-link confirm-approve-content__verify-contract-details"
@@ -628,7 +628,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             class="confirm-approve-content__card-header__symbol"
           >
             <span
-              class="box mm-icon mm-icon--size-md box--display-inline-block box--flex-direction-row box--color-inherit"
+              class="mm-box mm-icon mm-icon--size-md mm-box--display-inline-block mm-box--color-inherit"
               style="mask-image: url('./images/icons/tag.svg');"
             />
           </div>
@@ -638,7 +638,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
             Transaction fee
           </div>
           <div
-            class="box box--flex-direction-row box--width-1/6"
+            class="mm-box mm-box--width-1/6"
           >
             <a
               class="button btn-link confirm-approve-content__small-blue-text"
@@ -695,7 +695,7 @@ exports[`ConfirmApproveContent Component should render Confirm approve page corr
                 Nonce
               </h6>
               <button
-                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
+                class="mm-box mm-text mm-button-base mm-button-link mm-button-link--size-auto mm-text--body-md-medium mm-box--margin-left-3 mm-box--padding-0 mm-box--padding-right-0 mm-box--padding-left-0 mm-box--display-inline-flex mm-box--justify-content-center mm-box--align-items-center mm-box--color-primary-default mm-box--background-color-transparent"
               >
                 Edit
               </button>
