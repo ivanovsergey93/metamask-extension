@@ -261,7 +261,7 @@ async function withFixtures(options, testSuite) {
 const WINDOW_TITLES = Object.freeze({
   ExtensionInFullScreenView: 'MetaMask',
   InstalledExtensions: 'Extensions',
-  Notification: 'MetaMask Notification',
+  Dialog: 'MetaMask Dialog',
   Phishing: 'MetaMask Phishing Detection',
   ServiceWorkerSettings: 'Inspect with Chrome Developer Tools',
   SnapSimpleKeyringDapp: 'SSK - Simple Snap Keyring',
@@ -315,6 +315,7 @@ const importSRPOnboardingFlow = async (driver, seedPhrase, password) => {
   await driver.fill('[data-testid="create-password-confirm"]', password);
   await driver.clickElement('[data-testid="create-password-terms"]');
   await driver.clickElement('[data-testid="create-password-import"]');
+  await driver.waitForElementNotPresent('.loading-overlay');
 };
 
 const completeImportSRPOnboardingFlow = async (
@@ -361,6 +362,9 @@ const completeImportSRPOnboardingFlowWordByWord = async (
   await driver.fill('[data-testid="create-password-confirm"]', password);
   await driver.clickElement('[data-testid="create-password-terms"]');
   await driver.clickElement('[data-testid="create-password-import"]');
+
+  // wait for loading to complete
+  await driver.waitForElementNotPresent('.loading-overlay');
 
   // complete
   await driver.clickElement('[data-testid="onboarding-complete-done"]');
@@ -516,7 +520,6 @@ const testSRPDropdownIterations = async (options, driver, iterations) => {
 };
 
 const passwordUnlockOpenSRPRevealQuiz = async (driver) => {
-  await driver.navigate();
   await unlockWallet(driver);
 
   // navigate settings to reveal SRP
@@ -591,6 +594,26 @@ const switchToOrOpenDapp = async (
   }
 };
 
+const connectToDapp = async (driver) => {
+  await openDapp(driver);
+  // Connect to dapp
+  await driver.clickElement({
+    text: 'Connect',
+    tag: 'button',
+  });
+
+  await switchToNotificationWindow(driver);
+  await driver.clickElement({
+    text: 'Next',
+    tag: 'button',
+  });
+  await driver.clickElement({
+    text: 'Connect',
+    tag: 'button',
+  });
+  await driver.switchToWindowWithTitle(WINDOW_TITLES.TestDApp);
+};
+
 const PRIVATE_KEY =
   '0x7C9529A67102755B7E6102D6D950AC5D5863C98713805CEC576B945B15B71EAC';
 
@@ -601,6 +624,37 @@ const convertETHToHexGwei = (eth) => convertToHexValue(eth * 10 ** 18);
 
 const defaultGanacheOptions = {
   accounts: [{ secretKey: PRIVATE_KEY, balance: convertETHToHexGwei(25) }],
+};
+
+const multipleGanacheOptions = {
+  accounts: [
+    {
+      secretKey: PRIVATE_KEY,
+      balance: convertETHToHexGwei(25),
+    },
+    {
+      secretKey: PRIVATE_KEY_TWO,
+      balance: convertETHToHexGwei(25),
+    },
+  ],
+};
+
+const generateGanacheOptions = ({
+  secretKey = PRIVATE_KEY,
+  balance = convertETHToHexGwei(25),
+  ...otherProps
+}) => {
+  const accounts = [
+    {
+      secretKey,
+      balance,
+    },
+  ];
+
+  return {
+    accounts,
+    ...otherProps, // eg: hardfork
+  };
 };
 
 const openActionMenuAndStartSendFlow = async (driver) => {
@@ -688,20 +742,6 @@ const locateAccountBalanceDOM = async (driver, ganacheServer) => {
 
 const WALLET_PASSWORD = 'correct horse battery staple';
 
-const DEFAULT_GANACHE_OPTIONS = {
-  accounts: [
-    {
-      secretKey: PRIVATE_KEY,
-      balance: convertETHToHexGwei(25),
-    },
-  ],
-};
-
-const generateGanacheOptions = (overrides) => ({
-  ...DEFAULT_GANACHE_OPTIONS,
-  ...overrides,
-});
-
 async function waitForAccountRendered(driver) {
   await driver.waitForSelector(
     process.env.MULTICHAIN
@@ -710,9 +750,31 @@ async function waitForAccountRendered(driver) {
   );
 }
 
-async function unlockWallet(driver) {
+/**
+ * Unlock the wallet with the default password.
+ *
+ * @param {WebDriver} driver - The webdriver instance
+ * @param {object} options - Options for unlocking the wallet
+ * @param {boolean} options.navigate - Whether to navigate to the root page prior to unlocking. Defaults to true.
+ * @param {boolean} options.waitLoginSuccess - Whether to wait for the login to succeed. Defaults to true.
+ */
+async function unlockWallet(
+  driver,
+  options = {
+    navigate: true,
+    waitLoginSuccess: true,
+  },
+) {
+  if (options.navigate !== false) {
+    await driver.navigate();
+  }
+
   await driver.fill('#password', WALLET_PASSWORD);
   await driver.press('#password', driver.Key.ENTER);
+
+  if (options.waitLoginSuccess !== false) {
+    await driver.waitForElementNotPresent('[data-testid="unlock-page"]');
+  }
 }
 
 const logInWithBalanceValidation = async (driver, ganacheServer) => {
@@ -805,10 +867,7 @@ async function validateContractDetails(driver) {
 async function switchToNotificationWindow(driver, numHandles = 3) {
   const windowHandles = await driver.waitUntilXWindowHandles(numHandles);
 
-  await driver.switchToWindowWithTitle(
-    WINDOW_TITLES.Notification,
-    windowHandles,
-  );
+  await driver.switchToWindowWithTitle(WINDOW_TITLES.Dialog, windowHandles);
 }
 
 /**
@@ -870,6 +929,14 @@ function assertInAnyOrder(requests, assertions) {
   );
 }
 
+async function getCleanAppState(driver) {
+  return await driver.executeScript(
+    () =>
+      window.stateHooks?.getCleanAppState &&
+      window.stateHooks.getCleanAppState(),
+  );
+}
+
 module.exports = {
   DAPP_URL,
   DAPP_ONE_URL,
@@ -897,6 +964,8 @@ module.exports = {
   testSRPDropdownIterations,
   openDapp,
   switchToOrOpenDapp,
+  connectToDapp,
+  multipleGanacheOptions,
   defaultGanacheOptions,
   sendTransaction,
   findAnotherAccountFromAccountList,
@@ -907,7 +976,6 @@ module.exports = {
   generateGanacheOptions,
   WALLET_PASSWORD,
   WINDOW_TITLES,
-  DEFAULT_GANACHE_OPTIONS,
   convertETHToHexGwei,
   roundToXDecimalPlaces,
   generateRandNumBetween,
@@ -924,4 +992,5 @@ module.exports = {
   assertInAnyOrder,
   genRandInitBal,
   openActionMenuAndStartSendFlow,
+  getCleanAppState,
 };
