@@ -95,79 +95,11 @@ export default function RecoveryPhrase({ secretRecoveryPhrase }) {
       </Box>
       <RecoveryPhraseChips
         secretRecoveryPhrase={secretRecoveryPhrase.split(' ')}
-        phraseRevealed={phraseRevealed && !hiddenPhrase}
+        phraseRevealed={false}
         hiddenPhrase={hiddenPhrase}
       />
       <div className="recovery-phrase__footer">
-        {phraseRevealed ? (
-          <div className="recovery-phrase__footer__copy-and-hide">
-            <div className="recovery-phrase__footer__copy-and-hide__area">
-              <Button
-                type="link"
-                icon={
-                  <i
-                    className={`far fa-eye${hiddenPhrase ? '' : '-slash'}`}
-                    color="var(--color-primary-default)"
-                  />
-                }
-                className="recovery-phrase__footer__copy-and-hide__button recovery-phrase__footer__copy-and-hide__button__hide-seed"
-                onClick={() => {
-                  setHiddenPhrase(!hiddenPhrase);
-                }}
-              >
-                {hiddenPhrase ? t('revealTheSeedPhrase') : t('hideSeedPhrase')}
-              </Button>
-              <Button
-                onClick={() => {
-                  handleCopy(secretRecoveryPhrase);
-                }}
-                icon={
-                  <Icon
-                    name={copied ? IconName.CopySuccess : IconName.Copy}
-                    color={IconColor.primaryDefault}
-                  />
-                }
-                className="recovery-phrase__footer__copy-and-hide__button recovery-phrase__footer__copy-and-hide__button__copy-to-clipboard"
-                type="link"
-              >
-                {copied ? t('copiedExclamation') : t('copyToClipboard')}
-              </Button>
-            </div>
-            <Button
-              data-testid="recovery-phrase-next"
-              type="primary"
-              className="recovery-phrase__footer--button"
-              onClick={() => {
-                trackEvent({
-                  category: MetaMetricsEventCategory.Onboarding,
-                  event:
-                    MetaMetricsEventName.OnboardingWalletSecurityPhraseWrittenDown,
-                });
-                history.push(
-                  `${ONBOARDING_CONFIRM_SRP_ROUTE}${isFromReminderParam}`,
-                );
-              }}
-            >
-              {t('next')}
-            </Button>
-          </div>
-        ) : (
-          <Button
-            data-testid="recovery-phrase-reveal"
-            type="primary"
-            className="recovery-phrase__footer--button"
-            onClick={() => {
-              trackEvent({
-                category: MetaMetricsEventCategory.Onboarding,
-                event:
-                  MetaMetricsEventName.OnboardingWalletSecurityPhraseRevealed,
-              });
-              setPhraseRevealed(true);
-            }}
-          >
-            {t('revealSeedWords')}
-          </Button>
-        )}
+        {}
       </div>
     </div>
   );
