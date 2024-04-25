@@ -1,0 +1,9 @@
+# sync fork
+git fetch --tags upstream
+git checkout v11.14.1
+git checkout -b v11.14.1_no_export
+git merge v11.9.0_no_export
+
+nvm use (new version) if needed
+yarn install
+yarn dist
